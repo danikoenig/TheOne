@@ -2,7 +2,10 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.4.1
+### New in v1.4.2
+- New bass program "04 - Bass - Sub": saw + square at 8', sine sub one octave below, punchy 24 dB ladder envelope, phase reset
+
+### v1.4.1
 - Clean output limiter (1.5 ms lookahead, ceiling -1 dBFS): big chords and pads no longer distort
 - Init around -9 dBFS so chords have headroom; Pad and Bass programs slightly lower
 

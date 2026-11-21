@@ -129,7 +129,7 @@ int main (int argc, char** argv)
     // ---------------- Bass (Takt 37-42, Beat 74-84)
     prog (148, 3);
     S (148, "out_vol", 0.8f);
-    const int bl[8] = { 33, 33, 45, 33, 0, 31, 33, 36 };
+    const int bl[8] = { 45, 45, 57, 45, 0, 43, 45, 48 };
     for (int bar = 37; bar < 42; ++bar)
         for (int k = 0; k < 8; ++k)
             if (bl[k] > 0) N (bar * 4.0 + k * 0.5, bar == 39 ? bl[k] - 4 : bl[k], 0.35, k == 0 ? 1.0f : 0.75f);

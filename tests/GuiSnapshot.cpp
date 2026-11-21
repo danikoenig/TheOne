@@ -99,6 +99,38 @@ int main (int argc, char** argv)
     for (int i = 0; i < TO::kFxDivs; ++i) printf ("%s=%.3f ", TO::fxDivName (i), TO::kFxDivBeats[i]);
     printf ("\n");
 
+    // Bass-Demo (WAV zum Abhoeren)
+    {
+        TheOneProcessor q;
+        q.setPlayConfigDetails (0, 2, 48000, 512);
+        q.prepareToPlay (48000, 512);
+        q.setCurrentProgram (3);
+        const int line[16] = { 45, 0, 57, 45, 0, 45, 48, 0, 45, 0, 43, 45, 0, 55, 45, 0 };
+        AudioBuffer<float> all (2, 48000 * 9); all.clear();
+        AudioBuffer<float> b (2, 512);
+        const double step = 0.125 * 48000;   // 1/16 bei 120 BPM
+        int last = -1;
+        for (int pos = 0; pos + 512 <= all.getNumSamples(); pos += 512)
+        {
+            MidiBuffer m;
+            for (int s = 0; s < 64; ++s)
+            {
+                const int on = (int) (s * step), off = (int) (s * step + step * 0.8);
+                const int n = line[s % 16];
+                if (n > 0 && on >= pos && on < pos + 512) m.addEvent (MidiMessage::noteOn (1, n, s % 4 == 0 ? 1.0f : 0.75f), on - pos);
+                if (n > 0 && off >= pos && off < pos + 512) m.addEvent (MidiMessage::noteOff (1, n), off - pos);
+            }
+            b.clear(); q.processBlock (b, m);
+            for (int c = 0; c < 2; ++c) all.copyFrom (c, pos, b, c, 0, 512);
+            (void) last;
+        }
+        File wf ("/tmp/bass_demo.wav"); wf.deleteFile();
+        WavAudioFormat fmt;
+        std::unique_ptr<AudioFormatWriter> w (fmt.createWriterFor (new FileOutputStream (wf), 48000, 2, 24, {}, 0));
+        w->writeFromAudioSampleBuffer (all, 0, all.getNumSamples());
+        printf ("bass demo peak %.3f\n", all.getMagnitude (0, all.getNumSamples()));
+    }
+
     // Zustand: Akkord, 3 Oszillatoren, Effekte, damit das Bild etwas zeigt
     auto set = [&] (const char* id, float v) { if (auto* q = p.apvts.getParameter (id)) q->setValueNotifyingHost (q->convertTo0to1 (v)); else printf ("unknown %s\n", id); };
     set ("mix_lvl1", 0.6f); set ("mix_lvl2", 0.5f); set ("osc2_beat", 0.5f); set ("osc3_beat", -0.6f); set ("osc2_wave", 0); set ("osc2_angle", 0.4f);

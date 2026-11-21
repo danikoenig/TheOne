@@ -153,12 +153,12 @@ namespace
                 { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.2f }, { "c_moddepth", 1.5f },
                 { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } } },
             { "04 - Bass - Sub", {
-                { "osc1_oct", 1 }, { "osc2_oct", 1 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
-                { "osc2_beat", 0.1f }, { "mix_lvl0", 0.5f }, { "mix_lvl1", 0.3f }, { "mix_lvl5", 0.55f },
-                { "sub_oct", 0 }, { "sub_wave", 0 },
-                { "lad_cut", 0.36f }, { "lad_res", 0.25f }, { "lad_eg", 0.5f },
-                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.35f },
-                { "feg_dec", 0.45f }, { "feg_sus", 0.1f },
+                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 0 }, { "osc2_mix", 1 }, { "osc2_pw", 0.5f },
+                { "osc2_beat", 0.15f }, { "osc1_reset", 1 }, { "osc2_reset", 1 },
+                { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.4f }, { "mix_lvl5", 0.6f }, { "sub_oct", 0 }, { "sub_wave", 0 },
+                { "lad_cut", 0.4f }, { "lad_res", 0.2f }, { "lad_eg", 0.42f }, { "lad_key", 0.5f }, { "lad_slope", 3 },
+                { "feg_att", 0.0f }, { "feg_dec", 0.5f }, { "feg_sus", 0.08f }, { "feg_rel", 0.35f }, { "feg_vel", 0.4f },
+                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.8f }, { "aeg_rel", 0.3f },
                 { "v_mono", 1 }, { "v_glideon", 0 }, { "v_multi", 1 } } },
             { "05 - Pluck - Poly", {
                 { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_mix", 0.6f }, { "osc2_pw", 0.3f }, { "osc2_beat", 0.25f },
