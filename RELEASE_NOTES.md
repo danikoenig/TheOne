@@ -2,7 +2,11 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.2.0
+### New in v1.2.1
+- BEND range knob moved next to the pitch and mod wheels
+- Sequencer in orange
+
+### v1.2.0
 - Step sequencer: SLIDE and ACCENT buttons per step (replace pulse count and gate type), bigger pitch and octave faders
 - Pitch bend range in whole semitones (+/- 0 to 24), shown as BEND RNG
 - Darker, lower keyboard

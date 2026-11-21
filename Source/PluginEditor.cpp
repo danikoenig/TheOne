@@ -272,7 +272,7 @@ namespace Acc
     const Colour fx    { 0xff4fb8ee };   // Blau
     const Colour voice { 0xffffd166 };   // Gelb
     const Colour out   { 0xff9fa8da };   // Lavendel
-    const Colour seq   { 0xfff0485a };   // Rot
+    const Colour seq   { 0xffff8a3d };   // Orange
 }
 struct Cap { String text; int x, y; float size; bool center; };
 
@@ -289,17 +289,20 @@ public:
         buildLeft();
         buildCenter();
         buildRight();
+        // Pitch-Bend-Bereich direkt bei den Raedern
+        ox = 0; oy = 0; cur = Acc::osc;
+        K ("c_bend", "BEND", 162, 754, 50);
         addAndMakeVisible (lcd);
         lcd.setBounds (838, 26, 394, 310);
         addAndMakeVisible (pitchWheel); addAndMakeVisible (modWheel);
-        pitchWheel.setBounds (62, 750, 54, 94);
-        modWheel.setBounds (126, 750, 54, 94);
+        pitchWheel.setBounds (50, 750, 50, 94);
+        modWheel.setBounds (106, 750, 50, 94);
         addAndMakeVisible (keys);
         keys.setAvailableRange (36, 96);
         keys.setScrollButtonsVisible (false);
-        keys.setKeyWidth (1960.0f / 36.0f);
+        keys.setKeyWidth (1928.0f / 36.0f);
         keys.setVelocity (0.8f, true);
-        keys.setBounds (190, 752, 1960, 92);
+        keys.setBounds (222, 752, 1928, 92);
         keys.setWantsKeyboardFocus (false);
         startTimerHz (30);
         start = std::make_unique<StartScreen> (proc);
@@ -392,7 +395,7 @@ public:
         K ("c_lfo3ang", "LFO3>ANG", 10, 92, 48);
         K ("c_lfo3pw", "LFO3>PW", 88, 92, 48);
         K ("c_fm", "FM AMT", 10, 160, 48);
-        K ("c_bend", "BEND RNG", 88, 160, 48);
+        K ("c_moddepth", "WHEEL VIB", 88, 160, 48);
         Ctext ("RING MOD SOURCES", 10, 222);
         S ("c_ringsrc", 8, 234, 132, 20, false);
         Ctext ("FM ROUTE", 10, 257);
@@ -513,7 +516,6 @@ public:
         Ctext ("MOD EG DESTINATION", 10, 54);
         Cb ("x_medest", 10, 66, 130, 18);
         K ("x_meamt", "AMT", 152, 50, 30);
-        K ("c_moddepth", "WHEEL", 230, 30, 40);
 
         // SVF
         M ("STATE VARIABLE FILTER", 1570, 14, 190, 250, Acc::filt);

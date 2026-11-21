@@ -127,7 +127,7 @@ HOW TO USE (SHORT)
   rigidly transposed. SILENT LEARN: learning without sound. CLEAR deletes it.
 - SYNC: LFOs, delays and modulation effects can follow the host tempo.
   Without a host (Standalone) the TEMPO knob in OUTPUT is used.
-- BEND RNG (OSC COMMON): pitch bend range in semitones, e.g. +/- 7.
+- BEND (next to the pitch and mod wheels): pitch bend range in semitones, e.g. +/- 7.
 - SUB (mixer): sub oscillator following OSC 1, one or two octaves lower.
 - START SCREEN: 5 starting points (Init, Pad, Lead, Bass, Pluck). Untick
   "SHOW AT STARTUP" to hide it. PANIC stops all notes.
@@ -301,7 +301,7 @@ KURZ ZUR BEDIENUNG
   Akkord, starr transponiert. SILENT LEARN: lernen ohne Ton. CLEAR löscht ihn.
 - SYNC: LFOs, Delays und Modulationseffekte können dem Host-Tempo folgen.
   Ohne Host (Standalone) gilt der TEMPO-Regler im Bereich OUTPUT.
-- BEND RNG (OSC COMMON): Pitch-Bend-Bereich in Halbtönen, z.B. +/- 7.
+- BEND (neben Pitch- und Mod-Wheel): Pitch-Bend-Bereich in Halbtönen, z.B. +/- 7.
 - SUB (Mixer): Sub-Oszillator, folgt OSC 1, eine oder zwei Oktaven tiefer.
 - START SCREEN: 5 Startpunkte (Init, Pad, Lead, Bass, Pluck). "SHOW AT STARTUP"
   abwählen, dann erscheint er nicht mehr. PANIC stoppt alle Noten.
