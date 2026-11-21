@@ -73,6 +73,16 @@ inline const char* divName (int i)
 }
 inline int divIndex (float x) { int i = (int) std::lround (x * (kNumDivs - 1)); return i < 0 ? 0 : (i > kNumDivs - 1 ? kNumDivs - 1 : i); }
 
+// Effekt-Sync: Notenwerte mit punktiert (D) und triolisch (T), nach Laenge sortiert (in Schlaegen)
+constexpr int kFxDivs = 15;
+constexpr float kFxDivBeats[kFxDivs] = { 4.0f, 3.0f, 2.0f, 1.5f, 4.0f / 3.0f, 1.0f, 0.75f, 2.0f / 3.0f, 0.5f, 0.375f, 1.0f / 3.0f, 0.25f, 1.0f / 6.0f, 0.125f, 1.0f / 12.0f };
+inline const char* fxDivName (int i)
+{
+    static const char* n[kFxDivs] = { "1/1", "1/2 D", "1/2", "1/4 D", "1/2 T", "1/4", "1/8 D", "1/4 T", "1/8", "1/16 D", "1/8 T", "1/16", "1/16 T", "1/32", "1/32 T" };
+    return n[i < 0 ? 0 : (i >= kFxDivs ? kFxDivs - 1 : i)];
+}
+inline int fxDivIndex (float x) { int i = (int) std::lround (x * (kFxDivs - 1)); return i < 0 ? 0 : (i > kFxDivs - 1 ? kFxDivs - 1 : i); }
+
 // ---- Effekt-Typen und Beschriftung der fuenf Regler -------------------------
 enum FxType { FX_OFF, FX_DELAY, FX_STEREO, FX_PINGPONG, FX_BBD, FX_TAPE, FX_ECHO, FX_CHORUS, FX_DUALCHORUS, FX_ENSEMBLE,
               FX_FLANGER, FX_PHASER6, FX_PHASER12, FX_CRUSHER, FX_RESONATOR, FX_NUM };

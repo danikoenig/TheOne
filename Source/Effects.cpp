@@ -59,11 +59,11 @@ void FxSlot::process (float* L, float* R, int n, const float* p, double bpm)
 
     // Delay-Zeit (Sekunden) aus P1
     float baseTime = 0.01f * std::pow (200.0f, p1);
-    if (sync) baseTime = kDivBeats[divIndex (p1)] * beatSec;
+    if (sync) baseTime = kFxDivBeats[fxDivIndex (p1)] * beatSec;
     baseTime = std::clamp (baseTime, 0.0005f, 2.4f);
     // Modulationsrate (Hz) aus P1
     float modRate = 0.1f * std::pow (100.0f, p1);
-    if (sync) modRate = (1.0f / beatSec) / std::max (0.0625f, kDivBeats[divIndex (p1)]);
+    if (sync) modRate = (1.0f / beatSec) / std::max (0.0625f, kFxDivBeats[fxDivIndex (p1)]);
 
     const bool delayType = type >= FX_DELAY && type <= FX_ECHO;
     for (int i = 0; i < n; ++i)

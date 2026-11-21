@@ -2,7 +2,11 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.2.1
+### New in v1.2.2
+- Effect sync with dotted and triplet values (1/1 to 1/32 T)
+- LFO rate in sync mode shows note values (e.g. 1/8 D)
+
+### v1.2.1
 - BEND range knob moved next to the pitch and mod wheels
 - Sequencer in orange
 

@@ -95,6 +95,10 @@ int main (int argc, char** argv)
         printf ("slide=%d maxVoices %d minLevel(around step change) %.4f\n", sl, maxV, minLvl);
     }
 
+    // Test: FX-Sync-Werte
+    for (int i = 0; i < TO::kFxDivs; ++i) printf ("%s=%.3f ", TO::fxDivName (i), TO::kFxDivBeats[i]);
+    printf ("\n");
+
     // Zustand: Akkord, 3 Oszillatoren, Effekte, damit das Bild etwas zeigt
     auto set = [&] (const char* id, float v) { if (auto* q = p.apvts.getParameter (id)) q->setValueNotifyingHost (q->convertTo0to1 (v)); else printf ("unknown %s\n", id); };
     set ("mix_lvl1", 0.6f); set ("mix_lvl2", 0.5f); set ("osc2_beat", 0.5f); set ("osc3_beat", -0.6f); set ("osc2_wave", 0); set ("osc2_angle", 0.4f);

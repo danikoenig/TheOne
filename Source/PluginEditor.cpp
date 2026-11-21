@@ -362,7 +362,21 @@ public:
             const String s = "lfo" + String (i + 1) + "_";
             M ("LFO " + String (i + 1), 50 + (int) std::lround (i * 192.67), 14, 182, 166, Acc::lfo);
             S (s + "wave", 8, 26, 76, 50, true, { "TRI/SIN", "PULSE", "SAW/RAMP", "S&H" });
-            K (s + "rate", "RATE", 86, 24, 54);
+            {
+                auto* rk = K (s + "rate", "RATE", 86, 24, 54);
+                auto* syncP = apvts.getRawParameterValue (s + "sync");
+                auto* timP = apvts.getRawParameterValue (s + "timing");
+                auto* rateP = apvts.getParameter (s + "rate");
+                rk->setValueText ([syncP, timP, rateP] (double v) -> String
+                {
+                    if (syncP->load() < 0.5f) return rateP->getText (rateP->convertTo0to1 ((float) v), 32);
+                    const float beats = kDivBeats[divIndex ((float) v)];
+                    String n = beats >= 4.0f ? String ((int) std::lround (beats / 4.0f)) + (beats >= 8.0f ? " BARS" : " BAR")
+                                             : "1/" + String ((int) std::lround (4.0f / beats));
+                    const int tm = (int) std::lround (timP->load());
+                    return n + (tm == 1 ? " D" : (tm == 2 ? " T" : ""));
+                });
+            }
             S (s + "timing", 146, 26, 34, 36, true, { "STR", "DOT", "TRI" });
             S (s + "range", 146, 70, 34, 48, true, { "SLOW", "LOW", "MED", "HIGH" });
             K (s + "var", "VAR", 8, 88, 40);
@@ -474,14 +488,14 @@ public:
         {
             if (delayT)
             {
-                if (sync) return divName (divIndex (x));
+                if (sync) return fxDivName (fxDivIndex (x));
                 const float t = 0.01f * std::pow (200.0f, x);
                 if (t < 1.0f) snprintf (b, sizeof (b), "%.0f ms", t * 1000.0f); else snprintf (b, sizeof (b), "%.2f s", t);
                 return b;
             }
             if (modT)
             {
-                if (sync) return divName (divIndex (x));
+                if (sync) return fxDivName (fxDivIndex (x));
                 snprintf (b, sizeof (b), "%.2f Hz", 0.1f * std::pow (100.0f, x)); return b;
             }
             if (type == FX_CRUSHER) { snprintf (b, sizeof (b), "%.1f BIT", 24.0f - 22.0f * x); return b; }
