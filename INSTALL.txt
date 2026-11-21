@@ -126,7 +126,7 @@ HOW TO USE (SHORT)
   root), switch LEARN off, switch CHORD on. Now every key plays that chord,
   rigidly transposed. SILENT LEARN: learning without sound. CLEAR deletes it.
 - SYNC: LFOs, delays and modulation effects can follow the host tempo.
-  Without a host (Standalone) the TEMPO knob in OUTPUT is used.
+  Without a host (Standalone app) the TEMPO knob in OUTPUT is used.
 - BEND (next to the pitch and mod wheels): pitch bend range in semitones, e.g. +/- 7.
 - SUB (mixer): sub oscillator following OSC 1, one or two octaves lower.
 - START SCREEN: 5 starting points (Init, Pad, Lead, Bass, Pluck). Untick

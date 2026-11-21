@@ -83,6 +83,8 @@ void TheOneProcessor::prepareToPlay (double sr, int blockSize)
     down.fill (false);
     lastLearn = false;
     limState = 1.0f;
+    volS.reset (sr, 0.03);
+    volS.setCurrentAndTargetValue (0.64f * 4.5f);
 }
 
 void TheOneProcessor::applyChord (const std::vector<int>& iv)
@@ -424,24 +426,24 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
 
     fx.process (L, R, numSamples, P.data(), bpm);
 
-    // Master + sanfter Begrenzer
+    // Master (Init liegt bei etwa -6 dBFS) + sanfter Begrenzer
     const float vol = P[(size_t) TO::OUT0 + TO::OUT_VOL];
-    const float gain = vol * vol * 2.2f;
-    float peak = 0.0f;
+    volS.setTargetValue (vol * vol * 4.5f);
     float* outL = buffer.getWritePointer (0);
-    float* outR = buffer.getNumChannels() > 1 ? buffer.getWritePointer (1) : nullptr;
+    float* outR = buffer.getWritePointer (1);
+    auto lim = [] (float x)
+    {
+        const float a = std::fabs (x);
+        if (a <= 0.7f) return x;
+        const float sg = x < 0 ? -1.0f : 1.0f;
+        return sg * (0.7f + 0.3f * std::tanh ((a - 0.7f) / 0.3f));
+    };
+    float peak = 0.0f;
     for (int i = 0; i < numSamples; ++i)
     {
-        float l = L[i] * gain, r = R[i] * gain;
-        auto lim = [] (float x)
-        {
-            const float a = std::fabs (x);
-            if (a <= 0.7f) return x;
-            const float s = x < 0 ? -1.0f : 1.0f;
-            return s * (0.7f + 0.3f * std::tanh ((a - 0.7f) / 0.3f));
-        };
-        l = lim (l); r = lim (r);
-        outL[i] = l; if (outR) outR[i] = r;
+        const float g = volS.getNextValue();
+        float l = lim (L[i] * g), r = lim (R[i] * g);
+        outL[i] = l; outR[i] = r;
         peak = std::max (peak, std::max (std::fabs (l), std::fabs (r)));
         if (++scopeDecim >= 4)
         {

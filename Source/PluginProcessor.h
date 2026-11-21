@@ -85,6 +85,7 @@ private:
     std::vector<int> pendingChord;
     int scopeDecim = 0;
     float limState = 1.0f;
+    juce::SmoothedValue<float> volS;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TheOneProcessor)
 };

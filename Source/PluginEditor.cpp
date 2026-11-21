@@ -173,7 +173,7 @@ private:
 class FaderCtl : public Component
 {
 public:
-    FaderCtl (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, bool notched, Colour a) : show (s), notch (notched), acc (a)
+    FaderCtl (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, bool notched, Colour a, bool valueBelow = false) : show (s), notch (notched), acc (a), below (valueBelow)
     {
         param = apvts.getParameter (id);
         att = std::make_unique<ParameterAttachment> (*param, [this] (float) { repaint(); });
@@ -182,6 +182,13 @@ public:
     void paint (Graphics& g) override
     {
         auto r = getLocalBounds().toFloat();
+        if (below)
+        {
+            const int v = (int) std::lround (param->convertFrom0to1 (param->getValue()));
+            g.setColour (v == 0 ? Col::textDim : acc);
+            g.setFont (F (9.5f));
+            g.drawText (v > 0 ? "+" + String (v) : String (v), r.removeFromBottom (13.0f).toNearestInt(), Justification::centred, false);
+        }
         auto track = Rectangle<float> (r.getCentreX() - 3.0f, r.getY() + 6.0f, 6.0f, r.getHeight() - 12.0f);
         g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (track, 3.0f);
         g.setColour (Colour (0xff2b2e35)); g.drawRoundedRectangle (track, 3.0f, 1.0f);
@@ -212,7 +219,7 @@ public:
 private:
     void setFrom (const MouseEvent& e)
     {
-        const float t = jlimit (0.0f, 1.0f, 1.0f - (e.position.y - 6.0f) / ((float) getHeight() - 12.0f));
+        const float t = jlimit (0.0f, 1.0f, 1.0f - (e.position.y - 6.0f) / ((float) getHeight() - (below ? 13.0f : 0.0f) - 12.0f));
         att->setValueAsPartOfGesture (param->convertFrom0to1 (t));
         announce();
     }
@@ -220,6 +227,7 @@ private:
     ShowFn show;
     bool notch;
     Colour acc;
+    bool below = false;
     RangedAudioParameter* param = nullptr;
     std::unique_ptr<ParameterAttachment> att;
 };
@@ -257,6 +265,40 @@ private:
     StringArray labels;
     int filledState = 0;
     int mode = 0;
+    RangedAudioParameter* param = nullptr;
+    std::unique_ptr<ParameterAttachment> att;
+};
+
+//==============================================================================
+// Oktav-Taste pro Step: Klick schaltet 0 -> +1 -> -1 -> 0
+class OctBtn : public Component
+{
+public:
+    OctBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, Colour a) : show (s), acc (a)
+    {
+        param = apvts.getParameter (id);
+        att = std::make_unique<ParameterAttachment> (*param, [this] (float v) { val = (int) std::lround (v); repaint(); });
+        att->sendInitialUpdate();
+    }
+    void paint (Graphics& g) override
+    {
+        auto r = getLocalBounds().toFloat().reduced (1.5f);
+        if (val != 0) { g.setColour (acc.withAlpha (val > 0 ? 1.0f : 0.55f)); g.fillRoundedRectangle (r, 3.0f); }
+        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
+        g.setColour (val != 0 ? Colour (0xff17181c) : Col::textDim);
+        g.setFont (F (8.5f));
+        g.drawText (val > 0 ? "+1" : (val < 0 ? "-1" : "0"), getLocalBounds(), Justification::centred, false);
+    }
+    void mouseDown (const MouseEvent&) override
+    {
+        const int nv = val == 0 ? 1 : (val > 0 ? -1 : 0);
+        att->setValueAsCompleteGesture ((float) nv);
+        if (show) show (param->getName (64), param->getCurrentValueAsText());
+    }
+private:
+    ShowFn show;
+    Colour acc;
+    int val = 0;
     RangedAudioParameter* param = nullptr;
     std::unique_ptr<ParameterAttachment> att;
 };
@@ -605,49 +647,47 @@ public:
             T (s + "loop", "LOOP", 190, 146, 66, 15);
             T (s + "latch", "LATCH", 190, 168, 70, 15);
         }
-        // Ausgang, Programme, Panic
-        M ("OUTPUT", 1260, 484, 220, 250, Acc::out);
-        K ("out_vol", "VOLUME", 14, 24, 60);
-        K ("out_tempo", "TEMPO", 132, 30, 50);
-        Ctext ("START PROGRAM", 12, 118);
+        // Ausgang, Programme, Panic (TEMPO nur in der Standalone-App)
+        M ("OUTPUT", 1260, 484, 160, 250, Acc::fx);
+        const bool standalone = proc.wrapperType == AudioProcessor::wrapperType_Standalone;
+        K ("out_vol", "VOLUME", standalone ? 6 : 36, 20, 88, true);
+        if (standalone) K ("out_tempo", "TEMPO", 106, 40, 44);
         progBox = new ComboBox();
         owned.add (progBox); addAndMakeVisible (progBox);
         for (int i = 0; i < proc.getNumPrograms(); ++i) progBox->addItem (proc.getProgramName (i), i + 1);
         progBox->setSelectedId (proc.getCurrentProgram() + 1, dontSendNotification);
-        progBox->setBounds (ox + 12, oy + 130, 196, 22);
+        progBox->setBounds (ox + 10, oy + 148, 140, 22);
         progBox->onChange = [this] { proc.setCurrentProgram (progBox->getSelectedId() - 1); };
         auto* st = new TextButton ("START SCREEN");
         owned.add (st); addAndMakeVisible (st);
-        st->setBounds (ox + 12, oy + 162, 94, 24);
+        st->setBounds (ox + 10, oy + 178, 140, 24);
         st->onClick = [this] { showStart (true); };
         auto* pan = new TextButton ("PANIC");
         owned.add (pan); addAndMakeVisible (pan);
         pan->setColour (TextButton::textColourOffId, Colour (0xffff1f3f));
-        pan->setBounds (ox + 114, oy + 162, 94, 24);
+        pan->setBounds (ox + 10, oy + 208, 140, 24);
         pan->onClick = [this] { proc.panic(); };
-        Ctext ("Panic: alle Noten stumm, Hold aus.", 12, 200);
-        Ctext ("Ohne Host gilt der TEMPO-Wert.", 12, 214);
 
         // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
-        M ("STEP SEQUENCER", 1490, 484, 660, 250, Acc::seq);
-        T ("seq_on", "SEQ ON", 8, 22, 88, 16);
-        T ("seq_latch", "LATCH", 8, 40, 88, 16);
-        Ctext ("RATE", 8, 60, 8.5f);
-        Cb ("seq_rate", 8, 71, 88, 18);
-        Ctext ("ORDER", 8, 92, 8.5f);
-        Cb ("seq_order", 8, 103, 88, 18);
-        K ("seq_len", "STEPS", 4, 124, 30);
-        K ("seq_gate", "GATE", 52, 124, 30);
+        M ("STEP SEQUENCER", 1430, 484, 720, 250, Acc::seq);
+        T ("seq_on", "SEQ ON", 8, 18, 88, 16);
+        T ("seq_latch", "LATCH", 8, 36, 88, 16);
+        Ctext ("RATE", 8, 55, 8.5f);
+        Cb ("seq_rate", 8, 66, 92, 18);
+        Ctext ("ORDER", 8, 87, 8.5f);
+        Cb ("seq_order", 8, 98, 92, 18);
+        K ("seq_len", "LENGTH", 4, 118, 34);
+        K ("seq_gate", "GATE", 56, 118, 34);
         for (int i = 0; i < kSeqSteps; ++i)
         {
-            const int x = 104 + i * 34;
+            const int x = 108 + i * 38;
             const String n (i + 1);
             stageX[i] = ox + x;
-            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 4, oy + 31, 26, 92);
-            auto* fo = new FaderCtl (apvts, "seq_o" + n, show, true, cur);  owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 4, oy + 127, 26, 50);
-            auto* sl = new StepModeBtn (apvts, "seq_sl" + n, show, cur, { "SLIDE", "SLIDE" }, 1); owned.add (sl); addAndMakeVisible (sl); sl->setBounds (ox + x + 3, oy + 182, 29, 17);
-            auto* ac = new StepModeBtn (apvts, "seq_ac" + n, show, cur, { "ACC", "ACC" }, 1);     owned.add (ac); addAndMakeVisible (ac); ac->setBounds (ox + x + 3, oy + 202, 29, 17);
-            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 3, oy + 222, 29, 18);
+            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur, true); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 5, oy + 30, 28, 128);
+            auto* fo = new OctBtn (apvts, "seq_o" + n, show, cur); owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 3, oy + 162, 32, 17);
+            auto* sl = new StepModeBtn (apvts, "seq_sl" + n, show, cur, { "SLIDE", "SLIDE" }, 1); owned.add (sl); addAndMakeVisible (sl); sl->setBounds (ox + x + 3, oy + 182, 32, 17);
+            auto* ac = new StepModeBtn (apvts, "seq_ac" + n, show, cur, { "ACC", "ACC" }, 1);     owned.add (ac); addAndMakeVisible (ac); ac->setBounds (ox + x + 3, oy + 202, 32, 17);
+            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 3, oy + 222, 32, 18);
         }
     }
 
@@ -721,7 +761,7 @@ public:
             }
         }
         syncFilterKnobs();
-        repaint (1490, 484, 660, 40);
+        repaint (1430, 484, 720, 40);
         if (! svfCut->slider.isMouseButtonDown() && ! ladCut->slider.isMouseButtonDown())
         { lastCut[0] = (float) svfCut->slider.getValue(); lastCut[1] = (float) ladCut->slider.getValue(); }
     }
@@ -785,12 +825,18 @@ public:
         }
         // Sequencer: Legende, Stufennummern und Lauf-LED
         {
-            const int mx = 1490, my = 484;
+            const int mx = 1430, my = 484;
+            // 4er-Gruppen leicht absetzen
+            for (int b = 0; b < 4; ++b)
+            {
+                g.setColour (b % 2 == 0 ? Colours::white.withAlpha (0.035f) : Colours::black.withAlpha (0.12f));
+                g.fillRoundedRectangle (Rectangle<float> ((float) (mx + 108 + b * 152), (float) my + 5.0f, 152.0f, 240.0f).reduced (1.5f, 0.0f), 4.0f);
+            }
             g.setColour (Col::textDim);
             g.setFont (F (7.5f));
             g.drawText ("SLIDE", Rectangle<int> (mx + 40, my + 185, 64, 10), Justification::centredRight, false);
             g.drawText ("ACCENT", Rectangle<int> (mx + 40, my + 205, 64, 10), Justification::centredRight, false);
-            g.drawText ("OCTAVE", Rectangle<int> (mx + 40, my + 172, 64, 8), Justification::centredRight, false);
+            g.drawText ("OCTAVE", Rectangle<int> (mx + 40, my + 165, 64, 10), Justification::centredRight, false);
             g.drawText ("STEP", Rectangle<int> (mx + 40, my + 226, 64, 10), Justification::centredRight, false);
             const int cur = proc.seqStage.load();
             const int len = (int) std::lround (apvts.getRawParameterValue ("seq_len")->load());
@@ -798,8 +844,8 @@ public:
             {
                 g.setColour (i < len ? Col::text : Col::textDim.withAlpha (0.4f));
                 g.setFont (F (8.5f));
-                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 9, 34, 10), Justification::centred, false);
-                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 17.0f, (float) my + 24.0f }), i == cur, Acc::seq);
+                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 9, 38, 10), Justification::centred, false);
+                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 19.0f, (float) my + 24.0f }), i == cur, Acc::seq);
             }
         }
     }

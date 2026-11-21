@@ -252,7 +252,7 @@ inline std::vector<PDef> makeDefs()
         for (int k = 0; k < 5; ++k) F (s + "p" + std::to_string (k + 1), n + "Param " + std::to_string (k + 1), 0, 1, 0.5f, dPct);
         B (s + "sync", n + "Sync", false);
     }
-    F ("out_vol", "Master Volume", 0, 1, 0.7f, dTen);
+    F ("out_vol", "Master Volume", 0, 1, 0.8f, dTen);
     F ("out_tempo", "Tempo (ohne Host)", 40, 240, 120, dBpm);
     // Step-Sequencer (8 Stufen, Metropolis-Prinzip: Pitch, Pulse Count, Gate Type)
     B ("seq_on", "Seq On", false);
