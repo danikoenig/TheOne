@@ -2,7 +2,11 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.1.0
+### New in v1.1.1
+- Display with a glowing blue frame
+- Bigger level knobs in the mixer
+
+### v1.1.0
 - Step sequencer: OCTAVE row per step (-1 / 0 / +1), all steps start in the middle, wider layout
 - More colour: each section has its own accent (oscillators orange, LFOs violet, filters cyan, envelopes green, effects blue, sequencer red)
 - Cleaner layout: display framed like the other sections, all boxes on one grid, smaller OUTPUT

@@ -446,7 +446,7 @@ public:
 
     void buildCenter()
     {
-        M ("DISPLAY", 830, 14, 410, 330, Acc::osc);
+        M ("DISPLAY", 830, 14, 410, 330, Acc::fx);
         for (int i = 0; i < 3; ++i)
         {
             const String s = "fx" + String (i + 1) + "_";
@@ -508,15 +508,15 @@ public:
         const char* nm[6] = { "OSC 1", "OSC 2", "OSC 3", "RING", "NOISE", "SUB" };
         for (int i = 0; i < 6; ++i)
         {
-            K ("mix_lvl" + String (i), nm[i], 8 + i * 49, 18, 36);
-            T ("mix_svf" + String (i), "S", 5 + i * 49, 66, 44, 14);
-            T ("mix_lad" + String (i), "L", 5 + i * 49, 84, 44, 14);
+            K ("mix_lvl" + String (i), nm[i], 3 + i * 49, 16, 46);
+            T ("mix_svf" + String (i), "S", 7 + i * 49, 78, 42, 13);
+            T ("mix_lad" + String (i), "L", 7 + i * 49, 93, 42, 13);
         }
-        Ctext ("S = SVF   L = LADDER", 150, 104);
-        Ctext ("SUB OCTAVE", 8, 104);
-        S ("sub_oct", 8, 116, 80, 24, false);
-        Ctext ("SUB WAVE", 100, 104);
-        S ("sub_wave", 100, 116, 110, 24, false);
+        Ctext ("SUB OCTAVE", 8, 110, 8.5f);
+        S ("sub_oct", 8, 121, 70, 20, false);
+        Ctext ("SUB WAVE", 92, 110, 8.5f);
+        S ("sub_wave", 92, 121, 100, 20, false);
+        Ctext ("S = SVF   L = LADDER", 206, 126, 8.0f);
         // Zusatz-Modulation
         M ("EXTRA MODULATION", 1260, 170, 300, 94, Acc::lfo);
         Ctext ("LFO 4 DESTINATION", 10, 18);
@@ -751,6 +751,18 @@ public:
             g.fillRoundedRectangle (r, 6.0f);
             g.setColour (Colour (0xff2b2e35));
             g.drawRoundedRectangle (r, 6.0f, 1.0f);
+            if (m.title == "DISPLAY")   // blauer, schimmernder Rahmen
+            {
+                for (int k = 6; k >= 1; --k)
+                {
+                    g.setColour (m.acc.withAlpha (0.05f + 0.02f * (float) (6 - k)));
+                    g.drawRoundedRectangle (r.expanded ((float) k * 0.9f), 6.0f + (float) k, 1.8f);
+                }
+                g.setColour (m.acc.withAlpha (0.9f));
+                g.drawRoundedRectangle (r, 6.0f, 1.6f);
+                g.setColour (Colours::white.withAlpha (0.25f));
+                g.drawRoundedRectangle (r.reduced (1.5f), 5.0f, 0.6f);
+            }
             g.setFont (F (10.5f).withExtraKerningFactor (0.1f));
             const float tw = F (10.5f).withExtraKerningFactor (0.1f).getStringWidthFloat (m.title) + 24.0f;
             g.setColour (Colour (0xff1d1f24));
