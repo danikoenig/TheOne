@@ -1,0 +1,15 @@
+Uninstall The One
+by Dani Koenig
+
+This removes The One from your Mac:
+- VST3, Audio Unit and CLAP (system and user plug-in folders)
+- the Standalone app in Applications, if it is there
+
+Your projects, presets and settings are not touched.
+Click Continue, then Install (macOS calls it Install, it uninstalls) and enter your Mac password.
+
+---
+
+Entfernt The One von deinem Mac: VST3, Audio Unit und die Standalone-App.
+Deine Projekte, Presets und Einstellungen bleiben erhalten.
+Klick auf Fortfahren und dann auf Installieren (macOS nennt es so, es deinstalliert) und gib dein Mac-Passwort ein.

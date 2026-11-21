@@ -1,0 +1,138 @@
+name: Build macOS (Apple Silicon)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest   # Apple Silicon Runner
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache JUCE
+        uses: actions/cache@v4
+        with:
+          path: build/_deps/juce-src
+          key: juce-src-8.0.4-${{ github.event.repository.name }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+
+      - name: Build
+        run: cmake --build build --config Release --target TheOne_VST3 TheOne_AU TheOne_CLAP TheOne_Standalone -j 4
+
+      - name: Validate AU (auval)
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R "build/TheOne_artefacts/Release/AU/The One.component" ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 2
+          auval -a | grep -i "Dkng" || true
+          set -o pipefail
+          auval -strict -v aumu Tone Dkng | tail -40
+
+      - name: Sign (ad-hoc) and package
+        run: |
+          ART=build/TheOne_artefacts/Release
+          codesign --force --deep --sign - "$ART/VST3/The One.vst3"
+          codesign --force --deep --sign - "$ART/AU/The One.component"
+          codesign --force --deep --sign - "$ART/CLAP/The One.clap"
+          codesign --force --deep --sign - "$ART/Standalone/The One.app"
+          mkdir -p dist "pkg/TheOne"
+          cp -R "$ART/VST3/The One.vst3" "pkg/TheOne/"
+          cp -R "$ART/AU/The One.component" "pkg/TheOne/"
+          cp -R "$ART/CLAP/The One.clap" "pkg/TheOne/"
+          cp INSTALL.txt "pkg/TheOne/INSTALL.txt"
+          ditto -c -k --keepParent "pkg/TheOne" "dist/TheOne-VST3-macOS-arm64.zip"
+          ditto -c -k --keepParent "$ART/Standalone/The One.app" "dist/TheOne-Standalone-macOS-arm64.zip"
+
+      - name: Build installer (.pkg)
+        run: |
+          ART=build/TheOne_artefacts/Release
+          VERSION=$(grep -m1 -oE 'project\(TheOne VERSION [0-9.]+' CMakeLists.txt | grep -oE '[0-9.]+$')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p pkgroot build/pkg
+          cp -R "$ART/VST3/The One.vst3" pkgroot/
+          # Bundle nicht umleiten (sonst installiert macOS ggf. an einen alten Ort)
+          pkgbuild --analyze --root pkgroot build/pkg/component.plist
+          plutil -replace 0.BundleIsRelocatable -bool NO build/pkg/component.plist
+          pkgbuild --root pkgroot --component-plist build/pkg/component.plist \
+            --identifier ch.danikoenig.theone.vst3 --version "$VERSION" \
+            --install-location "/Library/Audio/Plug-Ins/VST3" build/pkg/TheOneVST3.pkg
+          # AU-Paket
+          mkdir -p pkgroot-au
+          cp -R "$ART/AU/The One.component" pkgroot-au/
+          pkgbuild --analyze --root pkgroot-au build/pkg/component-au.plist
+          plutil -replace 0.BundleIsRelocatable -bool NO build/pkg/component-au.plist
+          pkgbuild --root pkgroot-au --component-plist build/pkg/component-au.plist \
+            --identifier ch.danikoenig.theone.au --version "$VERSION" \
+            --install-location "/Library/Audio/Plug-Ins/Components" build/pkg/TheOneAU.pkg
+          # CLAP-Paket
+          mkdir -p pkgroot-clap
+          cp -R "$ART/CLAP/The One.clap" pkgroot-clap/
+          pkgbuild --analyze --root pkgroot-clap build/pkg/component-clap.plist
+          plutil -replace 0.BundleIsRelocatable -bool NO build/pkg/component-clap.plist
+          pkgbuild --root pkgroot-clap --component-plist build/pkg/component-clap.plist \
+            --identifier ch.danikoenig.theone.clap --version "$VERSION" \
+            --install-location "/Library/Audio/Plug-Ins/CLAP" build/pkg/TheOneCLAP.pkg
+          sed "s/@VERSION@/$VERSION/g" installer/distribution.xml > build/pkg/distribution.xml
+          productbuild --distribution build/pkg/distribution.xml --resources installer/resources \
+            --package-path build/pkg "dist/TheOne-Installer.pkg"
+          pkgutil --payload-files "dist/TheOne-Installer.pkg" | head -5
+
+      - name: Build uninstaller (.pkg)
+        run: |
+          VERSION=$(grep -m1 -oE 'project\(TheOne VERSION [0-9.]+' CMakeLists.txt | grep -oE '[0-9.]+$')
+          mkdir -p build/unpkg dist
+          chmod +x installer/uninstall/scripts/postinstall
+          pkgbuild --nopayload --scripts installer/uninstall/scripts \
+            --identifier ch.danikoenig.theone.uninstall --version "$VERSION" build/unpkg/TheOneUninstall.pkg
+          sed "s/@VERSION@/$VERSION/g" installer/uninstall/distribution.xml > build/unpkg/distribution.xml
+          productbuild --distribution build/unpkg/distribution.xml --resources installer/uninstall/resources \
+            --package-path build/unpkg "dist/TheOne-Uninstaller.pkg"
+          ls -la dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TheOne-macOS-arm64
+          path: |
+            dist/*.zip
+            dist/*.pkg
+
+      - name: Release (bei Tag v* oder Commit mit [release])
+        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]'))
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', env.VERSION) }}
+          name: The One ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', env.VERSION) }}
+          target_commitish: ${{ github.sha }}
+          body_path: RELEASE_NOTES.md
+          make_latest: true
+          files: |
+            dist/*.zip
+            dist/*.pkg
+
+      - name: Remove older releases (only the newest stays)
+        if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]'))
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          KEEP=${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', env.VERSION) }}
+          for tag in $(gh release list -R "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName'); do
+            if [ "$tag" != "$KEEP" ]; then
+              echo "Deleting release $tag"
+              gh release delete "$tag" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag
+            fi
+          done

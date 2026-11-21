@@ -1,0 +1,10 @@
+Done!
+
+Restart your DAW and rescan plugins. Then search for "The One"
+in your instrument list.
+Logic Pro: the plugin is under Instrument > Dani Koenig.
+
+---
+
+Fertig! Starte deine DAW neu und lass die Plugins neu scannen.
+Logic Pro: Instrument > Dani Koenig.
