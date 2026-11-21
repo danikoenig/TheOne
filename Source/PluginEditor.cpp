@@ -356,6 +356,7 @@ public:
     }
     void showStart (bool on) { start->setVisible (on); if (on) start->toFront (false); }
     ~Content() override { setLookAndFeel (nullptr); }
+    void tick() { timerCallback(); }
 
     //------------------------------------------------------------------ Hilfen
     int ox = 0, oy = 0;
@@ -896,6 +897,8 @@ TheOneEditor::TheOneEditor (TheOneProcessor& p) : AudioProcessorEditor (&p), pro
 }
 
 TheOneEditor::~TheOneEditor() {}
+
+void TheOneEditor::tickForTest() { content->tick(); }
 
 void TheOneEditor::resized()
 {

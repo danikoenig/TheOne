@@ -86,6 +86,10 @@ private:
     int scopeDecim = 0;
     float limState = 1.0f;
     juce::SmoothedValue<float> volS;
+    // Ausgangs-Limiter mit 1.5 ms Vorschau (verzerrt nicht wie ein Clipper)
+    std::vector<float> laL, laR;
+    int laPos = 0, laLen = 72;
+    float limGain = 1.0f, limAtt = 0.9f, limRel = 0.9999f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TheOneProcessor)
 };

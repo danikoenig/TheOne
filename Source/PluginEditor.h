@@ -9,6 +9,7 @@ public:
     ~TheOneEditor() override;
     void resized() override;
     void paint (juce::Graphics&) override {}
+    void tickForTest();   // nur fuer den Reel-Renderer: Anzeigen ohne Timer aktualisieren
 
     static constexpr int kW = 2200, kH = 850;
     class Content;

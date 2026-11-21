@@ -84,7 +84,13 @@ void TheOneProcessor::prepareToPlay (double sr, int blockSize)
     lastLearn = false;
     limState = 1.0f;
     volS.reset (sr, 0.03);
-    volS.setCurrentAndTargetValue (0.64f * 4.5f);
+    volS.setCurrentAndTargetValue (0.64f * 3.2f);
+    laLen = std::max (8, (int) std::lround (0.0015 * sr));
+    laL.assign ((size_t) laLen, 0.0f); laR.assign ((size_t) laLen, 0.0f); laPos = 0;
+    limGain = 1.0f;
+    limAtt = std::exp (-3.0f / (float) laLen);
+    limRel = std::exp (-1.0f / (0.15f * (float) sr));
+    setLatencySamples (laLen);
 }
 
 void TheOneProcessor::applyChord (const std::vector<int>& iv)
@@ -132,7 +138,7 @@ namespace
                 { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc3_oct", 3 },
                 { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc3_wave", 0 },
                 { "osc2_beat", 0.35f }, { "osc3_beat", -0.3f }, { "osc3_angle", 0.0f },
-                { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.5f }, { "mix_lvl2", 0.35f },
+                { "mix_lvl0", 0.4f }, { "mix_lvl1", 0.35f }, { "mix_lvl2", 0.25f },
                 { "lad_cut", 0.5f }, { "lad_res", 0.15f }, { "lad_eg", 0.3f }, { "lad_key", 0.5f },
                 { "aeg_att", 0.72f }, { "aeg_dec", 0.7f }, { "aeg_sus", 0.85f }, { "aeg_rel", 0.8f },
                 { "feg_att", 0.72f }, { "feg_dec", 0.8f }, { "feg_sus", 0.45f }, { "feg_rel", 0.8f },
@@ -148,7 +154,7 @@ namespace
                 { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } } },
             { "04 - Bass - Sub", {
                 { "osc1_oct", 1 }, { "osc2_oct", 1 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
-                { "osc2_beat", 0.1f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.4f }, { "mix_lvl5", 0.7f },
+                { "osc2_beat", 0.1f }, { "mix_lvl0", 0.5f }, { "mix_lvl1", 0.3f }, { "mix_lvl5", 0.55f },
                 { "sub_oct", 0 }, { "sub_wave", 0 },
                 { "lad_cut", 0.36f }, { "lad_res", 0.25f }, { "lad_eg", 0.5f },
                 { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.35f },
@@ -446,23 +452,31 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
 
     fx.process (L, R, numSamples, P.data(), bpm);
 
-    // Master (Init liegt bei etwa -6 dBFS) + sanfter Begrenzer
+    // Master (Init um -9 dBFS, Akkorde mit Luft) + Limiter mit Vorschau, Decke -1 dBFS
     const float vol = P[(size_t) TO::OUT0 + TO::OUT_VOL];
-    volS.setTargetValue (vol * vol * 4.5f);
+    volS.setTargetValue (vol * vol * 3.2f);
+    const float ceil = 0.89f;
     float* outL = buffer.getWritePointer (0);
     float* outR = buffer.getWritePointer (1);
     auto lim = [] (float x)
     {
         const float a = std::fabs (x);
-        if (a <= 0.7f) return x;
+        if (a <= 0.95f) return x;   // nur Notbremse, der Limiter haelt die Spitzen bei -1 dBFS
         const float sg = x < 0 ? -1.0f : 1.0f;
-        return sg * (0.7f + 0.3f * std::tanh ((a - 0.7f) / 0.3f));
+        return sg * (0.95f + 0.05f * std::tanh ((a - 0.95f) / 0.05f));
     };
     float peak = 0.0f;
     for (int i = 0; i < numSamples; ++i)
     {
         const float g = volS.getNextValue();
-        float l = lim (L[i] * g), r = lim (R[i] * g);
+        const float inL = L[i] * g, inR = R[i] * g;
+        const float pk = std::max (std::fabs (inL), std::fabs (inR));
+        const float target = pk > ceil ? ceil / pk : 1.0f;
+        limGain = target < limGain ? target + (limGain - target) * limAtt : target + (limGain - target) * limRel;
+        const float dl = laL[(size_t) laPos], dr = laR[(size_t) laPos];
+        laL[(size_t) laPos] = inL; laR[(size_t) laPos] = inR;
+        if (++laPos >= laLen) laPos = 0;
+        float l = lim (dl * limGain), r = lim (dr * limGain);
         outL[i] = l; outR[i] = r;
         peak = std::max (peak, std::max (std::fabs (l), std::fabs (r)));
         if (++scopeDecim >= 4)
