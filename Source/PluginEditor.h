@@ -10,7 +10,7 @@ public:
     void resized() override;
     void paint (juce::Graphics&) override {}
 
-    static constexpr int kW = 2200, kH = 880;
+    static constexpr int kW = 2200, kH = 850;
     class Content;
 private:
     TheOneProcessor& proc;

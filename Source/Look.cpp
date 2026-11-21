@@ -351,7 +351,7 @@ void WaveView::paint (Graphics& g)
 void KeyboardView::drawWhiteNote (int, Graphics& g, Rectangle<float> a, bool isDown, bool isOver, Colour lineColour, Colour)
 {
     g.setGradientFill (isDown ? ColourGradient (Col::led.brighter (0.2f), 0, a.getY(), Col::led.darker (0.35f), 0, a.getBottom(), false)
-                              : ColourGradient (Colour (0xfffbfbf8), 0, a.getY(), isOver ? Colour (0xffe9e9e4) : Colour (0xffdcdcd6), 0, a.getBottom(), false));
+                              : ColourGradient (Colour (0xffcfd0cc), 0, a.getY(), isOver ? Colour (0xffbdbeba) : Colour (0xffa9aaa6), 0, a.getBottom(), false));
     g.fillRect (a);
     g.setColour (lineColour);
     g.fillRect (a.withWidth (1.0f));

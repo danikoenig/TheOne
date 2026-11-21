@@ -21,6 +21,7 @@ static String fmtValue (const TO::PDef& d, float v)
         case dBeatHz: snprintf (b, sizeof (b), "%+.2f Hz", v); return b;
         case dInt:    snprintf (b, sizeof (b), "%d", (int) std::lround (v)); return b;
         case dStep:   snprintf (b, sizeof (b), "%+d st", (int) std::lround (v)); return b;
+        case dBend:   snprintf (b, sizeof (b), "+/- %d st", (int) std::lround (v)); return b;
         case dOct:    { const int o = (int) std::lround (v); if (o == 0) return "0 oct"; snprintf (b, sizeof (b), "%+d oct", o); return b; }
         case dBpm:    snprintf (b, sizeof (b), "%.0f BPM", v); return b;
         case dLfoRate: snprintf (b, sizeof (b), "%.1f", v * 10.0f); return b;
@@ -44,7 +45,7 @@ AudioProcessorValueTreeState::ParameterLayout TheOneProcessor::createLayout (con
         else
         {
             const TO::PDef dd = d;
-            const float step = (d.disp == TO::dInt || d.disp == TO::dStep || d.disp == TO::dOct) ? 1.0f : 0.0f;
+            const float step = (d.disp == TO::dInt || d.disp == TO::dStep || d.disp == TO::dOct || d.disp == TO::dBend) ? 1.0f : 0.0f;
             auto attr = AudioParameterFloatAttributes().withStringFromValueFunction ([dd] (float v, int) { return fmtValue (dd, v); });
             layout.add (std::make_unique<AudioParameterFloat> (pid, d.name, NormalisableRange<float> (d.mn, d.mx, step), d.def, attr));
         }
@@ -246,22 +247,26 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
 
     MidiBuffer out;
     auto noteOffAt = [&] (int pos) { if (seqSounding >= 0) { out.addEvent (MidiMessage::noteOff (1, seqSounding), pos); seqSounding = -1; } };
-    auto stageType = [&] (int s) { return (int) std::lround (P[SEQ0 + SQ_TYPE0 + s]); };
-    auto stagePulses = [&] (int s) { return jlimit (1, 8, (int) std::lround (P[SEQ0 + SQ_PULSE0 + s])); };
-
-    // Pulsbeginn: Noten der aktuellen Stufe ausloesen
+    // Step ausloesen: Slide vom vorherigen Step gleitet ohne Neuanschlag
     auto firePulse = [&] (int pos)
     {
-        const int t = modeOf (seqStageIdx) != 0 ? 0 : stageType (seqStageIdx);   // MUTE/SKIP = stumm
-        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + seqStageIdx]) + 12 * (int) std::lround (P[SEQ0 + SQ_OCT0 + seqStageIdx]));
-        const bool first = seqPulseIdx == 0;
-        if (t == 0) { noteOffAt (pos); return; }                       // REST
-        if (t == 3) { if (first) { noteOffAt (pos); out.addEvent (MidiMessage::noteOn (1, note, seqVel), pos); seqSounding = note; } seqOffIn = -1.0; return; } // HOLD
-        if (t == 1 && ! first) return;                                   // SINGLE nur erster Puls
-        noteOffAt (pos);
-        out.addEvent (MidiMessage::noteOn (1, note, seqVel), pos);
-        seqSounding = note;
-        seqOffIn = gateLen;
+        const int st = seqStageIdx;
+        if (modeOf (st) != 0) { noteOffAt (pos); seqOffIn = -1.0; seqPrevSlide = false; return; }   // MUTE/SKIP
+        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + st]) + 12 * (int) std::lround (P[SEQ0 + SQ_OCT0 + st]));
+        const float vel = P[SEQ0 + SQ_ACC0 + st] > 0.5f ? 1.0f : 0.62f;
+        if (seqPrevSlide && seqSounding >= 0)
+        {
+            if (note != seqSounding) out.addEvent (MidiMessage::controllerEvent (16, seqSounding, note), pos);
+            seqSounding = note;
+        }
+        else
+        {
+            noteOffAt (pos);
+            out.addEvent (MidiMessage::noteOn (1, note, vel), pos);
+            seqSounding = note;
+        }
+        seqPrevSlide = P[SEQ0 + SQ_SLIDE0 + st] > 0.5f;
+        seqOffIn = seqPrevSlide ? -1.0 : gateLen;
     };
     double cur = 0.0;
     auto advanceTo = [&] (int end)
@@ -281,12 +286,7 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
             if (seqToPulse <= 1e-9)
             {
                 seqToPulse += pulse;
-                if (++seqPulseIdx >= stagePulses (seqStageIdx))
-                {
-                    seqPulseIdx = 0;
-                    if (stageType (seqStageIdx) == 3) noteOffAt (at);
-                    seqStageIdx = nextStage (seqStageIdx);
-                }
+                seqStageIdx = nextStage (seqStageIdx);
                 firePulse (at);
             }
         }
@@ -315,7 +315,7 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
             seqRoot = n;   // Taste = Grundton der Sequenz
             if (! wasRunning)
             {
-                seqRunning = true; seqStageIdx = firstStage(); seqPulseIdx = 0; seqToPulse = pulse; seqOffIn = -1.0;
+                seqRunning = true; seqStageIdx = firstStage(); seqToPulse = pulse; seqOffIn = -1.0; seqPrevSlide = false;
                 firePulse (pos);
             }
         }
@@ -404,6 +404,12 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
         {
             const int n = m.getNoteNumber();
             if (down[(size_t) n]) { synth.noteOff (n); down[(size_t) n] = false; }
+        }
+        else if (m.isController() && m.getChannel() == 16)   // interner Sequencer-Slide
+        {
+            const int from = m.getControllerNumber(), to = m.getControllerValue();
+            synth.slide (from, to);
+            if (down[(size_t) from]) { down[(size_t) from] = false; down[(size_t) to] = true; }
         }
         else if (m.isPitchWheel()) midiBend = (float) (m.getPitchWheelValue() - 8192) / 8192.0f;
         else if (m.isController())

@@ -127,12 +127,14 @@ HOW TO USE (SHORT)
   rigidly transposed. SILENT LEARN: learning without sound. CLEAR deletes it.
 - SYNC: LFOs, delays and modulation effects can follow the host tempo.
   Without a host (Standalone) the TEMPO knob in OUTPUT is used.
+- BEND RNG (OSC COMMON): pitch bend range in semitones, e.g. +/- 7.
 - SUB (mixer): sub oscillator following OSC 1, one or two octaves lower.
 - START SCREEN: 5 starting points (Init, Pad, Lead, Bass, Pluck). Untick
   "SHOW AT STARTUP" to hide it. PANIC stops all notes.
 - STEP SEQUENCER: switch SEQ ON and hold a key; the sequence plays transposed
-  from that key. Per step: PITCH, OCTAVE (-1 / 0 / +1), PULSE COUNT (how many pulses the step lasts),
-  GATE TYPE (REST, ONE, MULTI, HOLD) and the STEP button (ON / MUTE / SKIP).
+  from that key. Per step: PITCH, OCTAVE (-1 / 0 / +1), SLIDE (glides into
+  the next step without a new attack), ACCENT (louder, brighter) and the STEP
+  button (ON / MUTE / SKIP).
   ORDER: forward, reverse, ping-pong or random. LATCH keeps it running.
 - The keyboard at the bottom can be played with the mouse and shows pressed keys.
 
@@ -299,13 +301,14 @@ KURZ ZUR BEDIENUNG
   Akkord, starr transponiert. SILENT LEARN: lernen ohne Ton. CLEAR löscht ihn.
 - SYNC: LFOs, Delays und Modulationseffekte können dem Host-Tempo folgen.
   Ohne Host (Standalone) gilt der TEMPO-Regler im Bereich OUTPUT.
+- BEND RNG (OSC COMMON): Pitch-Bend-Bereich in Halbtönen, z.B. +/- 7.
 - SUB (Mixer): Sub-Oszillator, folgt OSC 1, eine oder zwei Oktaven tiefer.
 - START SCREEN: 5 Startpunkte (Init, Pad, Lead, Bass, Pluck). "SHOW AT STARTUP"
   abwählen, dann erscheint er nicht mehr. PANIC stoppt alle Noten.
 - STEP SEQUENCER: SEQ ON einschalten und eine Taste halten, die Sequenz läuft
-  ab dieser Taste transponiert. Pro Stufe: PITCH, OCTAVE (-1 / 0 / +1), PULSE COUNT (wie viele Pulse
-  die Stufe dauert), GATE TYPE (REST, ONE, MULTI, HOLD) und die STEP-Taste
-  (ON / MUTE / SKIP). ORDER: vorwärts, rückwärts, Ping-Pong oder zufällig.
+  ab dieser Taste transponiert. Pro Stufe: PITCH, OCTAVE (-1 / 0 / +1), SLIDE
+  (gleitet ohne Neuanschlag in den nächsten Step), ACCENT (lauter, heller) und
+  die STEP-Taste (ON / MUTE / SKIP). ORDER: vorwärts, rückwärts, Ping-Pong oder zufällig.
   LATCH lässt die Sequenz weiterlaufen.
 - Die Tastatur unten spielst du mit der Maus, gedrückte Tasten leuchten orange.
 

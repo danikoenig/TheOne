@@ -62,6 +62,7 @@ struct Voice
     float red = 0, wprev = 0;
     float gA = 0.1f, gB = 0.1f, kS = 1, gL = 0.1f, kL = 1;
     int ci = 0;
+    bool slide = false;
 };
 
 class Synth
@@ -74,7 +75,8 @@ public:
     void noteOn (int note, float velocity);
     void noteOff (int note);
     void allNotesOff();
-    void panic();   // sofort alles stumm, Pedal/Stack zuruecksetzen
+    void panic();
+    void slide (int fromKey, int toKey);   // Sequencer-Slide: Stimmen gleiten ohne Neuanschlag   // sofort alles stumm, Pedal/Stack zuruecksetzen
     void setPedal (bool down);
     void setBend (float v) { bend = v; }       // -1..1
     void setModWheel (float v) { modWheel = v; }

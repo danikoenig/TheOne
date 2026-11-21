@@ -159,7 +159,7 @@ void Synth::startNote (int key, int note, float vel, int u, int U, int ci, bool 
     const int idx = allocVoice (poly);
     Voice& v = voices[(size_t) idx];
     const bool wasActive = v.active;
-    v.key = key; v.mono = monoVoice; v.ci = ci;
+    v.key = key; v.mono = monoVoice; v.ci = ci; v.slide = false;
     v.order = ++orderCounter; v.gate = true; v.sustained = false; v.age = 0;
     v.target = (float) note;
     const bool glide = P[VOI0 + V_GLIDEON] > 0.5f;
@@ -291,6 +291,19 @@ void Synth::noteOff (int note)
     releaseKey (note);
 }
 
+void Synth::slide (int fromKey, int toKey)
+{
+    for (auto& v : voices)
+        if (v.active && v.gate && v.key == fromKey)
+        {
+            v.target = (float) toKey + (v.target - (float) v.key);
+            v.key = toKey;
+            v.slide = true;
+        }
+    for (auto& k : monoStack) if (k == fromKey) k = toKey;
+    lastNote = (float) toKey;
+}
+
 void Synth::allNotesOff()
 {
     for (auto& v : voices) if (v.active) releaseVoice (v);
@@ -418,6 +431,7 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
     const float fmix = p[FIL0 + F_MIX];
     const float gainSvf = std::min (1.0f, 2.0f * (1.0f - fmix)), gainLad = std::min (1.0f, 2.0f * fmix);
     float glideCoef = 1.0f;
+    const float slideCoef = 1.0f - std::exp (-1.0f / (0.045f * fsr));
     if (p[VOI0 + V_GLIDEON] > 0.5f)
     {
         const float x = p[VOI0 + V_GLIDE];
@@ -445,7 +459,7 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
     for (int i = 0; i < n; ++i)
     {
         ++v.age;
-        v.note = glideCoef < 1.0f ? v.note + (v.target - v.note) * glideCoef : v.target;
+        { const float gc = v.slide ? std::min (glideCoef, slideCoef) : glideCoef; v.note = gc < 1.0f ? v.note + (v.target - v.note) * gc : v.target; }
 
         // Huellkurven
         for (int k = 0; k < 3; ++k)

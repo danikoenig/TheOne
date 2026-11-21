@@ -55,7 +55,7 @@ public:
         g.drawText (rValue.isEmpty() ? String ("-") : rValue, Rectangle<int> ((int) a.getX(), (int) a.getY() + 98, (int) a.getWidth(), 42), Justification::centred, false);
 
         // Oszilloskop
-        auto sc = Rectangle<float> (a.getX(), a.getY() + 150.0f, a.getWidth(), 100.0f);
+        auto sc = Rectangle<float> (a.getX(), a.getY() + 150.0f, a.getWidth(), 108.0f);
         g.setColour (Colour (0xff0d0e11));
         g.fillRect (sc);
         g.setColour (Col::lcdLine);
@@ -86,29 +86,13 @@ public:
             g.strokePath (p, PathStrokeType (1.2f));
         }
 
-        // Akkord
-        g.setColour (Col::textDim);
-        g.setFont (F (9.5f).withExtraKerningFactor (0.1f));
-        const bool chordOn = proc.apvts.getRawParameterValue ("v_chord")->load() > 0.5f;
-        auto cr = Rectangle<int> ((int) a.getX(), (int) a.getY() + 262, (int) a.getWidth(), 14);
-        g.drawText ("CHORD MEMORY", cr, Justification::centredLeft, false);
-        g.setColour (chordOn ? Col::led : Col::textDim);
-        g.drawText (chordOn ? "ON" : "OFF", cr, Justification::centredRight, false);
-        String s2;
-        const int n = proc.chordCount.load();
-        for (int i = 0; i < n; ++i)
-        {
-            const int v = proc.chordNotes[(size_t) i].load();
-            s2 += (i == 0 && v == 0 ? String ("0") : (v > 0 ? "+" + String (v) : String (v))) + "  ";
-        }
-        g.setColour (Col::text);
-        g.setFont (F (13.0f));
+        // Learn-Hinweis nur waehrend Chord Learn
         if (proc.learnActive.load())
         {
             g.setColour (Col::led);
-            g.drawText ("LEARN - " + String (proc.learnCount.load()) + " NOTES", Rectangle<int> (cr.getX(), cr.getY() + 16, cr.getWidth(), 18), Justification::centredLeft, false);
+            g.setFont (F (13.0f));
+            g.drawText ("CHORD LEARN - " + String (proc.learnCount.load()) + " NOTES", Rectangle<int> ((int) a.getX(), (int) a.getY() + 266, (int) a.getWidth(), 18), Justification::centredLeft, false);
         }
-        else g.drawText (s2.trim(), Rectangle<int> (cr.getX(), cr.getY() + 16, cr.getWidth(), 18), Justification::centredLeft, false);
     }
 
 private:
@@ -245,7 +229,8 @@ private:
 class StepModeBtn : public Component
 {
 public:
-    StepModeBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, Colour a) : show (s), acc (a)
+    StepModeBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, Colour a, StringArray lbl = { "ON", "MUTE", "SKIP" }, int filled = 0)
+        : show (s), acc (a), labels (lbl), filledState (filled)
     {
         param = apvts.getParameter (id);
         att = std::make_unique<ParameterAttachment> (*param, [this] (float v) { mode = (int) std::lround (v); repaint(); });
@@ -254,20 +239,23 @@ public:
     void paint (Graphics& g) override
     {
         auto r = getLocalBounds().toFloat().reduced (1.5f);
-        if (mode == 0) { g.setColour (acc); g.fillRoundedRectangle (r, 3.0f); }
-        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
-        g.setColour (mode == 0 ? Colour (0xff17181c) : (mode == 1 ? acc : Col::textDim));
+        const bool filled = mode == filledState;
+        if (filled) { g.setColour (acc); g.fillRoundedRectangle (r, 3.0f); }
+        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (labels.size() > 2 && mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
+        g.setColour (filled ? Colour (0xff17181c) : (labels.size() > 2 && mode == 1 ? acc : Col::textDim));
         g.setFont (F (7.5f));
-        g.drawText (mode == 0 ? "ON" : (mode == 1 ? "MUTE" : "SKIP"), getLocalBounds(), Justification::centred, false);
+        g.drawText (labels[jlimit (0, labels.size() - 1, mode)], getLocalBounds(), Justification::centred, false);
     }
     void mouseDown (const MouseEvent&) override
     {
-        att->setValueAsCompleteGesture ((float) ((mode + 1) % 3));
+        att->setValueAsCompleteGesture ((float) ((mode + 1) % labels.size()));
         if (show) show (param->getName (64), param->getCurrentValueAsText());
     }
 private:
     ShowFn show;
     Colour acc;
+    StringArray labels;
+    int filledState = 0;
     int mode = 0;
     RangedAudioParameter* param = nullptr;
     std::unique_ptr<ParameterAttachment> att;
@@ -304,14 +292,14 @@ public:
         addAndMakeVisible (lcd);
         lcd.setBounds (838, 26, 394, 310);
         addAndMakeVisible (pitchWheel); addAndMakeVisible (modWheel);
-        pitchWheel.setBounds (62, 750, 54, 124);
-        modWheel.setBounds (126, 750, 54, 124);
+        pitchWheel.setBounds (62, 750, 54, 94);
+        modWheel.setBounds (126, 750, 54, 94);
         addAndMakeVisible (keys);
         keys.setAvailableRange (36, 96);
         keys.setScrollButtonsVisible (false);
         keys.setKeyWidth (1960.0f / 36.0f);
         keys.setVelocity (0.8f, true);
-        keys.setBounds (190, 752, 1960, 122);
+        keys.setBounds (190, 752, 1960, 92);
         keys.setWantsKeyboardFocus (false);
         startTimerHz (30);
         start = std::make_unique<StartScreen> (proc);
@@ -404,7 +392,7 @@ public:
         K ("c_lfo3ang", "LFO3>ANG", 10, 92, 48);
         K ("c_lfo3pw", "LFO3>PW", 88, 92, 48);
         K ("c_fm", "FM AMT", 10, 160, 48);
-        K ("c_bend", "BEND", 88, 160, 48);
+        K ("c_bend", "BEND RNG", 88, 160, 48);
         Ctext ("RING MOD SOURCES", 10, 222);
         S ("c_ringsrc", 8, 234, 132, 20, false);
         Ctext ("FM ROUTE", 10, 257);
@@ -639,10 +627,10 @@ public:
             const int x = 104 + i * 34;
             const String n (i + 1);
             stageX[i] = ox + x;
-            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 4, oy + 31, 26, 62);
-            auto* fo = new FaderCtl (apvts, "seq_o" + n, show, true, cur);  owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 4, oy + 96, 26, 30);
-            auto* fc = new FaderCtl (apvts, "seq_c" + n, show, true, cur);  owned.add (fc); addAndMakeVisible (fc); fc->setBounds (ox + x + 4, oy + 130, 26, 46);
-            S ("seq_g" + n, x + 12, 180, 18, 36, true, { "", "", "", "" });
+            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 4, oy + 31, 26, 92);
+            auto* fo = new FaderCtl (apvts, "seq_o" + n, show, true, cur);  owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 4, oy + 127, 26, 50);
+            auto* sl = new StepModeBtn (apvts, "seq_sl" + n, show, cur, { "SLIDE", "SLIDE" }, 1); owned.add (sl); addAndMakeVisible (sl); sl->setBounds (ox + x + 3, oy + 182, 29, 17);
+            auto* ac = new StepModeBtn (apvts, "seq_ac" + n, show, cur, { "ACC", "ACC" }, 1);     owned.add (ac); addAndMakeVisible (ac); ac->setBounds (ox + x + 3, oy + 202, 29, 17);
             auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 3, oy + 222, 29, 18);
         }
     }
@@ -784,9 +772,9 @@ public:
             const int mx = 1490, my = 484;
             g.setColour (Col::textDim);
             g.setFont (F (7.5f));
-            const char* gl[4] = { "REST", "ONE", "MULTI", "HOLD" };
-            for (int k = 0; k < 4; ++k) g.drawText (gl[k], Rectangle<int> (mx + 40, my + 180 + k * 9, 64, 9), Justification::centredRight, false);
-            g.drawText ("TYPE", Rectangle<int> (mx + 8, my + 193, 40, 10), Justification::centredLeft, false);
+            g.drawText ("SLIDE", Rectangle<int> (mx + 40, my + 185, 64, 10), Justification::centredRight, false);
+            g.drawText ("ACCENT", Rectangle<int> (mx + 40, my + 205, 64, 10), Justification::centredRight, false);
+            g.drawText ("OCTAVE", Rectangle<int> (mx + 40, my + 172, 64, 8), Justification::centredRight, false);
             g.drawText ("STEP", Rectangle<int> (mx + 40, my + 226, 64, 10), Justification::centredRight, false);
             const int cur = proc.seqStage.load();
             const int len = (int) std::lround (apvts.getRawParameterValue ("seq_len")->load());
@@ -834,9 +822,9 @@ TheOneEditor::TheOneEditor (TheOneProcessor& p) : AudioProcessorEditor (&p), pro
     addAndMakeVisible (*content);
     content->setBounds (0, 0, kW, kH);
     setResizable (true, true);
-    setResizeLimits (880, 352, 3400, 1360);
+    setResizeLimits (880, 340, 3400, 1314);
     getConstrainer()->setFixedAspectRatio ((double) kW / (double) kH);
-    setSize (1760, 704);
+    setSize (1760, 680);
 }
 
 TheOneEditor::~TheOneEditor() {}

@@ -63,7 +63,8 @@ private:
     void runSequencer (juce::MidiBuffer&, int numSamples, double bpm, bool learn);
     juce::Array<int> seqKeys;
     bool seqRunning = false;
-    int seqRoot = 60, seqStageIdx = 0, seqPulseIdx = 0, seqSounding = -1;
+    int seqRoot = 60, seqStageIdx = 0, seqSounding = -1;
+    bool seqPrevSlide = false;
     double seqToPulse = 0.0, seqOffIn = -1.0;
     float seqVel = 0.8f;
     int seqDir = 1;
