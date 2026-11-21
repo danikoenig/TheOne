@@ -21,6 +21,7 @@ static String fmtValue (const TO::PDef& d, float v)
         case dBeatHz: snprintf (b, sizeof (b), "%+.2f Hz", v); return b;
         case dInt:    snprintf (b, sizeof (b), "%d", (int) std::lround (v)); return b;
         case dStep:   snprintf (b, sizeof (b), "%+d st", (int) std::lround (v)); return b;
+        case dOct:    { const int o = (int) std::lround (v); if (o == 0) return "0 oct"; snprintf (b, sizeof (b), "%+d oct", o); return b; }
         case dBpm:    snprintf (b, sizeof (b), "%.0f BPM", v); return b;
         case dLfoRate: snprintf (b, sizeof (b), "%.1f", v * 10.0f); return b;
         default:      snprintf (b, sizeof (b), "%.2f", v); return b;
@@ -43,7 +44,7 @@ AudioProcessorValueTreeState::ParameterLayout TheOneProcessor::createLayout (con
         else
         {
             const TO::PDef dd = d;
-            const float step = (d.disp == TO::dInt || d.disp == TO::dStep) ? 1.0f : 0.0f;
+            const float step = (d.disp == TO::dInt || d.disp == TO::dStep || d.disp == TO::dOct) ? 1.0f : 0.0f;
             auto attr = AudioParameterFloatAttributes().withStringFromValueFunction ([dd] (float v, int) { return fmtValue (dd, v); });
             layout.add (std::make_unique<AudioParameterFloat> (pid, d.name, NormalisableRange<float> (d.mn, d.mx, step), d.def, attr));
         }
@@ -252,7 +253,7 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
     auto firePulse = [&] (int pos)
     {
         const int t = modeOf (seqStageIdx) != 0 ? 0 : stageType (seqStageIdx);   // MUTE/SKIP = stumm
-        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + seqStageIdx]));
+        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + seqStageIdx]) + 12 * (int) std::lround (P[SEQ0 + SQ_OCT0 + seqStageIdx]));
         const bool first = seqPulseIdx == 0;
         if (t == 0) { noteOffAt (pos); return; }                       // REST
         if (t == 3) { if (first) { noteOffAt (pos); out.addEvent (MidiMessage::noteOn (1, note, seqVel), pos); seqSounding = note; } seqOffIn = -1.0; return; } // HOLD

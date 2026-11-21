@@ -19,15 +19,15 @@ TheOneLook::TheOneLook()
     setColour (TextButton::textColourOffId, Col::text);
 }
 
-void drawLed (Graphics& g, Rectangle<float> r, bool on)
+void drawLed (Graphics& g, Rectangle<float> r, bool on, Colour led)
 {
     const auto c = r.getCentre();
     if (on)
     {
-        g.setGradientFill (ColourGradient (Col::led.withAlpha (0.45f), c.x, c.y, Col::led.withAlpha (0.0f), c.x + r.getWidth() * 1.1f, c.y, true));
+        g.setGradientFill (ColourGradient (led.withAlpha (0.45f), c.x, c.y, led.withAlpha (0.0f), c.x + r.getWidth() * 1.1f, c.y, true));
         g.fillEllipse (r.expanded (r.getWidth() * 0.9f));
     }
-    g.setColour (on ? Col::led : Col::ledOff);
+    g.setColour (on ? led : Colour (0xff2a2c33));
     g.fillEllipse (r);
     g.setColour (Colours::white.withAlpha (on ? 0.45f : 0.12f));
     g.fillEllipse (r.reduced (r.getWidth() * 0.28f).translated (-r.getWidth() * 0.08f, -r.getWidth() * 0.1f));
@@ -46,14 +46,29 @@ void TheOneLook::drawRotarySlider (Graphics& g, int x, int y, int w, int h, floa
 
     // Skalenstriche
     const int ticks = 11;
-    for (int i = 0; i < ticks; ++i)
+    for (int i = 0; i < (s.isColourSpecified (Slider::rotarySliderFillColourId) ? 0 : ticks); ++i)
     {
         const float a = startAngle + (float) i / (float) (ticks - 1) * (endAngle - startAngle);
         const float r0 = R - 1.0f, r1 = R - (i % 5 == 0 ? 4.5f : 3.2f);
         g.setColour (Col::text.withAlpha (i % 5 == 0 ? 0.75f : 0.4f));
         g.drawLine (c.x + std::sin (a) * r0, c.y - std::cos (a) * r0, c.x + std::sin (a) * r1, c.y - std::cos (a) * r1, 1.0f);
     }
-    const float bodyR = R - (big ? 7.0f : 6.0f);
+    if (s.isColourSpecified (Slider::rotarySliderFillColourId))
+    {
+        const auto acc = s.findColour (Slider::rotarySliderFillColourId);
+        const float ar = R - 2.0f;
+        Path bg; bg.addCentredArc (c.x, c.y, ar, ar, 0.0f, startAngle, endAngle, true);
+        g.setColour (Colour (0xff2c2f36)); g.strokePath (bg, PathStrokeType (2.6f, PathStrokeType::curved, PathStrokeType::rounded));
+        const bool bip = s.getMinimum() < 0.0 && s.getMaximum() > 0.0;
+        const float from = bip ? startAngle + (float) ((0.0 - s.getMinimum()) / (s.getMaximum() - s.getMinimum())) * (endAngle - startAngle) : startAngle;
+        if (std::abs (angle - from) > 0.01f)
+        {
+            Path v; v.addCentredArc (c.x, c.y, ar, ar, 0.0f, jmin (from, angle), jmax (from, angle), true);
+            g.setColour (acc.withAlpha (0.25f)); g.strokePath (v, PathStrokeType (5.5f, PathStrokeType::curved, PathStrokeType::rounded));
+            g.setColour (acc); g.strokePath (v, PathStrokeType (2.6f, PathStrokeType::curved, PathStrokeType::rounded));
+        }
+    }
+    const float bodyR = R - (big ? 8.0f : 6.5f);
     auto body = Rectangle<float> (bodyR * 2, bodyR * 2).withCentre (c);
     // Schatten
     g.setColour (Colours::black.withAlpha (0.55f));
@@ -177,12 +192,12 @@ void LedToggle::paint (Graphics& g)
     auto body = Rectangle<float> (0.5f, ((float) getHeight() - h) * 0.5f + 0.5f, 26.0f, h - 1.0f);
     g.setColour (Colour (0xff121317));
     g.fillRoundedRectangle (body.expanded (1.5f), 3.0f);
-    g.setGradientFill (on ? ColourGradient (Col::led.brighter (0.25f), 0, body.getY(), Col::led.darker (0.5f), 0, body.getBottom(), false)
+    g.setGradientFill (on ? ColourGradient (acc.brighter (0.25f), 0, body.getY(), acc.darker (0.5f), 0, body.getBottom(), false)
                           : ColourGradient (Colour (0xff3a3e47), 0, body.getY(), Colour (0xff1d1f24), 0, body.getBottom(), false));
     g.fillRoundedRectangle (body, 2.5f);
     if (on)
     {
-        g.setColour (Col::led.withAlpha (0.25f));
+        g.setColour (acc.withAlpha (0.25f));
         g.drawRoundedRectangle (body.expanded (2.5f), 4.0f, 2.0f);
     }
     g.setColour (Colours::white.withAlpha (on ? 0.35f : 0.08f));
@@ -220,13 +235,13 @@ void SelectorCtl::paint (Graphics& g)
         const float d = 7.0f;
         if (vertical)
         {
-            drawLed (g, Rectangle<float> (d, d).withCentre ({ cell.getX() + 5.0f, cell.getCentreY() }), i == current);
+            drawLed (g, Rectangle<float> (d, d).withCentre ({ cell.getX() + 5.0f, cell.getCentreY() }), i == current, acc);
             g.setColour (i == current ? Col::text : Col::text.withAlpha (0.78f));
             g.drawText (labels[(size_t) i], cell.withTrimmedLeft (13.0f).toNearestInt(), Justification::centredLeft, false);
         }
         else
         {
-            drawLed (g, Rectangle<float> (d, d).withCentre ({ cell.getCentreX(), cell.getY() + d * 0.5f + 1.0f }), i == current);
+            drawLed (g, Rectangle<float> (d, d).withCentre ({ cell.getCentreX(), cell.getY() + d * 0.5f + 1.0f }), i == current, acc);
             g.setColour (i == current ? Col::text : Col::text.withAlpha (0.78f));
             g.drawText (labels[(size_t) i], cell.withTrimmedTop (d + 1.0f).toNearestInt(), Justification::centredTop, false);
         }

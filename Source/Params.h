@@ -8,7 +8,7 @@
 namespace TO
 {
 enum Kind { kFloat, kBool, kChoice };
-enum Disp { dNum, dPct, dCut, dTime, dDelay, dSemi, dHz, dCents, dInt, dBpm, dTen, dCurve, dLfoRate, dBeatHz, dDb, dStep };
+enum Disp { dNum, dPct, dCut, dTime, dDelay, dSemi, dHz, dCents, dInt, dBpm, dTen, dCurve, dLfoRate, dBeatHz, dDb, dStep, dOct };
 
 struct PDef
 {
@@ -34,7 +34,7 @@ enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD,
 enum { FX_TYPE, FX_MIX, FX_P1, FX_P2, FX_P3, FX_P4, FX_P5, FX_SYNC, FX_N };
 enum { OUT_VOL, OUT_TEMPO, OUT_N };
 constexpr int kSeqSteps = 16;
-enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_PITCH0, SQ_PULSE0 = SQ_PITCH0 + kSeqSteps, SQ_TYPE0 = SQ_PULSE0 + kSeqSteps, SQ_MODE0 = SQ_TYPE0 + kSeqSteps, SQ_N = SQ_MODE0 + kSeqSteps };
+enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_PITCH0, SQ_PULSE0 = SQ_PITCH0 + kSeqSteps, SQ_TYPE0 = SQ_PULSE0 + kSeqSteps, SQ_MODE0 = SQ_TYPE0 + kSeqSteps, SQ_OCT0 = SQ_MODE0 + kSeqSteps, SQ_N = SQ_OCT0 + kSeqSteps };
 
 constexpr int OSC0 = 0;
 constexpr int MIX0 = OSC0 + 3 * O_N;
@@ -251,11 +251,12 @@ inline std::vector<PDef> makeDefs()
     F ("seq_len", "Seq Length", 1, 16, 16, dInt);
     F ("seq_gate", "Seq Gate Length", 0.05f, 1, 0.5f, dPct);
     C ("seq_order", "Seq Order", { "FWD", "REV", "PING", "RANDOM" }, 0);
-    const int defP[16] = { 0, 12, 7, 0, 3, 0, 10, 7, 0, 12, 7, 0, 5, 0, 3, 7 };
+    const int defP[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     for (int i = 0; i < kSeqSteps; ++i) F ("seq_p" + std::to_string (i + 1), "Seq Pitch " + std::to_string (i + 1), -24, 24, (float) defP[i], dStep);
     for (int i = 0; i < kSeqSteps; ++i) F ("seq_c" + std::to_string (i + 1), "Seq Pulses " + std::to_string (i + 1), 1, 8, 1, dInt);
     for (int i = 0; i < kSeqSteps; ++i) C ("seq_g" + std::to_string (i + 1), "Seq Gate " + std::to_string (i + 1), { "REST", "SINGLE", "MULTI", "HOLD" }, 1);
     for (int i = 0; i < kSeqSteps; ++i) C ("seq_m" + std::to_string (i + 1), "Seq Step " + std::to_string (i + 1), { "ON", "MUTE", "SKIP" }, 0);
+    for (int i = 0; i < kSeqSteps; ++i) F ("seq_o" + std::to_string (i + 1), "Seq Octave " + std::to_string (i + 1), -1, 1, 0, dOct);
     return d;
 }
 } // namespace TO

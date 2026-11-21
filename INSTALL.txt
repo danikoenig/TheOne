@@ -131,7 +131,7 @@ HOW TO USE (SHORT)
 - START SCREEN: 5 starting points (Init, Pad, Lead, Bass, Pluck). Untick
   "SHOW AT STARTUP" to hide it. PANIC stops all notes.
 - STEP SEQUENCER: switch SEQ ON and hold a key; the sequence plays transposed
-  from that key. Per step: PITCH, PULSE COUNT (how many pulses the step lasts),
+  from that key. Per step: PITCH, OCTAVE (-1 / 0 / +1), PULSE COUNT (how many pulses the step lasts),
   GATE TYPE (REST, ONE, MULTI, HOLD) and the STEP button (ON / MUTE / SKIP).
   ORDER: forward, reverse, ping-pong or random. LATCH keeps it running.
 - The keyboard at the bottom can be played with the mouse and shows pressed keys.
@@ -303,7 +303,7 @@ KURZ ZUR BEDIENUNG
 - START SCREEN: 5 Startpunkte (Init, Pad, Lead, Bass, Pluck). "SHOW AT STARTUP"
   abwählen, dann erscheint er nicht mehr. PANIC stoppt alle Noten.
 - STEP SEQUENCER: SEQ ON einschalten und eine Taste halten, die Sequenz läuft
-  ab dieser Taste transponiert. Pro Stufe: PITCH, PULSE COUNT (wie viele Pulse
+  ab dieser Taste transponiert. Pro Stufe: PITCH, OCTAVE (-1 / 0 / +1), PULSE COUNT (wie viele Pulse
   die Stufe dauert), GATE TYPE (REST, ONE, MULTI, HOLD) und die STEP-Taste
   (ON / MUTE / SKIP). ORDER: vorwärts, rückwärts, Ping-Pong oder zufällig.
   LATCH lässt die Sequenz weiterlaufen.

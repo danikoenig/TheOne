@@ -189,7 +189,7 @@ private:
 class FaderCtl : public Component
 {
 public:
-    FaderCtl (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, bool notched) : show (s), notch (notched)
+    FaderCtl (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, bool notched, Colour a) : show (s), notch (notched), acc (a)
     {
         param = apvts.getParameter (id);
         att = std::make_unique<ParameterAttachment> (*param, [this] (float) { repaint(); });
@@ -218,7 +218,7 @@ public:
         auto cap = Rectangle<float> (r.getCentreX() - cw * 0.5f, y - 5.0f, cw, 10.0f);
         g.setGradientFill (ColourGradient (Colour (0xff3a3e47), 0, cap.getY(), Colour (0xff1d1f24), 0, cap.getBottom(), false));
         g.fillRoundedRectangle (cap, 2.5f);
-        g.setColour (Colour (0xffff9a4d));
+        g.setColour (acc);
         g.fillRect (cap.getX() + 3.0f, cap.getCentreY() - 1.0f, cap.getWidth() - 6.0f, 2.0f);
     }
     void mouseDown (const MouseEvent& e) override { att->beginGesture(); setFrom (e); }
@@ -235,6 +235,7 @@ private:
     void announce() { if (show) show (param->getName (64), param->getCurrentValueAsText()); }
     ShowFn show;
     bool notch;
+    Colour acc;
     RangedAudioParameter* param = nullptr;
     std::unique_ptr<ParameterAttachment> att;
 };
@@ -244,7 +245,7 @@ private:
 class StepModeBtn : public Component
 {
 public:
-    StepModeBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s) : show (s)
+    StepModeBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, Colour a) : show (s), acc (a)
     {
         param = apvts.getParameter (id);
         att = std::make_unique<ParameterAttachment> (*param, [this] (float v) { mode = (int) std::lround (v); repaint(); });
@@ -253,7 +254,6 @@ public:
     void paint (Graphics& g) override
     {
         auto r = getLocalBounds().toFloat().reduced (1.5f);
-        const Colour acc (0xffff9a4d);
         if (mode == 0) { g.setColour (acc); g.fillRoundedRectangle (r, 3.0f); }
         else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
         g.setColour (mode == 0 ? Colour (0xff17181c) : (mode == 1 ? acc : Col::textDim));
@@ -267,13 +267,25 @@ public:
     }
 private:
     ShowFn show;
+    Colour acc;
     int mode = 0;
     RangedAudioParameter* param = nullptr;
     std::unique_ptr<ParameterAttachment> att;
 };
 
 //==============================================================================
-struct Mod { String title; Rectangle<int> r; };
+struct Mod { String title; Rectangle<int> r; Colour acc; };
+namespace Acc
+{
+    const Colour osc   { 0xffff9a4d };   // Orange
+    const Colour lfo   { 0xffa78bfa };   // Violett
+    const Colour filt  { 0xff4dd0e1 };   // Tuerkis
+    const Colour env   { 0xff5ee6a8 };   // Gruen
+    const Colour fx    { 0xff4fb8ee };   // Blau
+    const Colour voice { 0xffffd166 };   // Gelb
+    const Colour out   { 0xff9fa8da };   // Lavendel
+    const Colour seq   { 0xfff0485a };   // Rot
+}
 struct Cap { String text; int x, y; float size; bool center; };
 
 class TheOneEditor::Content : public Component, private Timer
@@ -290,7 +302,7 @@ public:
         buildCenter();
         buildRight();
         addAndMakeVisible (lcd);
-        lcd.setBounds (830 + 6, 14 + 6, 398, 330);
+        lcd.setBounds (838, 26, 394, 310);
         addAndMakeVisible (pitchWheel); addAndMakeVisible (modWheel);
         pitchWheel.setBounds (62, 750, 54, 124);
         modWheel.setBounds (126, 750, 54, 124);
@@ -314,12 +326,14 @@ public:
 
     //------------------------------------------------------------------ Hilfen
     int ox = 0, oy = 0;
-    void M (const String& title, int x, int y, int w, int h) { mods.push_back ({ title, { x, y, w, h } }); ox = x; oy = y; }
+    Colour cur = Acc::osc;
+    void M (const String& title, int x, int y, int w, int h, Colour a) { cur = a; mods.push_back ({ title, { x, y, w, h }, a }); ox = x; oy = y; }
     void Ctext (const String& t, int x, int y, float size = 9.0f, bool center = false) { caps.push_back ({ t, ox + x, oy + y, size, center }); }
 
     KnobCtl* K (const String& id, const String& label, int x, int y, int size, bool big = false)
     {
         auto* k = new KnobCtl (apvts, id, label, size, show, big);
+        k->slider.setColour (Slider::rotarySliderFillColourId, cur);
         owned.add (k); addAndMakeVisible (k);
         k->setTopLeftPosition (ox + x, oy + y);
         return k;
@@ -327,6 +341,7 @@ public:
     SelectorCtl* S (const String& id, int x, int y, int w, int h, bool vertical, std::vector<String> labels = {})
     {
         auto* s = new SelectorCtl (apvts, id, vertical, std::move (labels));
+        s->acc = cur;
         owned.add (s); addAndMakeVisible (s);
         s->setBounds (ox + x, oy + y, w, h);
         return s;
@@ -334,6 +349,7 @@ public:
     LedToggle* T (const String& id, const String& label, int x, int y, int w = 70, int h = 16)
     {
         auto* t = new LedToggle (apvts, id, label);
+        t->acc = cur;
         owned.add (t); addAndMakeVisible (t);
         t->setBounds (ox + x, oy + y, w, h);
         return t;
@@ -353,7 +369,7 @@ public:
         for (int i = 0; i < 4; ++i)
         {
             const String s = "lfo" + String (i + 1) + "_";
-            M ("LFO " + String (i + 1), 50 + i * 190, 14, 184, 166);
+            M ("LFO " + String (i + 1), 50 + (int) std::lround (i * 192.67), 14, 182, 166, Acc::lfo);
             S (s + "wave", 8, 26, 76, 50, true, { "TRI/SIN", "PULSE", "SAW/RAMP", "S&H" });
             K (s + "rate", "RATE", 86, 24, 54);
             S (s + "timing", 146, 26, 34, 36, true, { "STR", "DOT", "TRI" });
@@ -369,7 +385,7 @@ public:
         for (int i = 0; i < 3; ++i)
         {
             const String s = "osc" + String (i + 1) + "_";
-            M ("OSCILLATOR " + String (i + 1), 50 + i * 200, 190, 194, 292);
+            M ("OSCILLATOR " + String (i + 1), 50 + i * 204, 190, 194, 292, Acc::osc);
             auto* wv = new WaveView (apvts, i); owned.add (wv); addAndMakeVisible (wv); wv->setBounds (ox + 8, oy + 24, 178, 60); waves.add (wv);
             K (s + "freq", "FREQ", 8, 92, 52);
             K (s + "beat", "BEAT", 70, 92, 52);
@@ -382,20 +398,20 @@ public:
             if (i > 0) T (s + "sync", "SYNC", 66, 268, 58, 15);
             T (s + "reset", "RESET", 124, 268, 62, 15);
         }
-        M ("OSCILLATOR COMMON", 650, 190, 160, 292);
-        K ("c_lfo1", "LFO1>PIT", 10, 24, 50);
-        K ("c_mepitch", "EG>PIT", 98, 24, 50);
-        K ("c_lfo3ang", "LFO3>ANG", 10, 92, 50);
-        K ("c_lfo3pw", "LFO3>PW", 98, 92, 50);
-        K ("c_fm", "FM AMT", 10, 160, 50);
-        K ("c_bend", "BEND", 98, 160, 50);
-        Ctext ("RING MOD SOURCES", 10, 232);
-        S ("c_ringsrc", 10, 244, 140, 20, false);
-        Ctext ("FM ROUTE", 10, 266);
-        S ("c_fmroute", 10, 278 - 8, 140, 20, false);
+        M ("OSC COMMON", 662, 190, 148, 292, Acc::osc);
+        K ("c_lfo1", "LFO1>PIT", 10, 24, 48);
+        K ("c_mepitch", "EG>PIT", 88, 24, 48);
+        K ("c_lfo3ang", "LFO3>ANG", 10, 92, 48);
+        K ("c_lfo3pw", "LFO3>PW", 88, 92, 48);
+        K ("c_fm", "FM AMT", 10, 160, 48);
+        K ("c_bend", "BEND", 88, 160, 48);
+        Ctext ("RING MOD SOURCES", 10, 222);
+        S ("c_ringsrc", 8, 234, 132, 20, false);
+        Ctext ("FM ROUTE", 10, 257);
+        S ("c_fmroute", 8, 269, 132, 20, false);
 
         // Noise
-        M ("NOISE", 50, 492, 190, 242);
+        M ("NOISE", 50, 492, 190, 242, Acc::osc);
         K ("n_att", "ATTACK", 10, 24, 48);
         K ("n_rel", "RELEASE", 70, 24, 48);
         K ("n_mix", "COLOR", 130, 24, 48);
@@ -404,7 +420,7 @@ public:
         T ("n_sus", "SUSTAIN", 10, 176, 80, 16);
 
         // Stimmen
-        M ("VOICE ALLOCATION", 250, 492, 560, 134);
+        M ("VOICE ALLOCATION", 250, 492, 560, 134, Acc::voice);
         K ("v_poly", "POLY", 14, 24, 48);
         K ("v_ucount", "UNISON", 76, 24, 48);
         K ("v_detune", "DETUNE", 138, 24, 48);
@@ -416,7 +432,7 @@ public:
         T ("v_multi", "MULTI TRIG", 430, 30, 96);
 
         // Akkord
-        M ("CHORD / HOLD", 250, 636, 560, 98);
+        M ("CHORD / HOLD", 250, 636, 560, 98, Acc::voice);
         T ("v_hold", "HOLD", 14, 34, 66, 16);
         T ("v_chord", "CHORD", 100, 34, 72, 16);
         T ("v_learn", "LEARN", 192, 34, 72, 16);
@@ -430,10 +446,11 @@ public:
 
     void buildCenter()
     {
+        M ("DISPLAY", 830, 14, 410, 330, Acc::osc);
         for (int i = 0; i < 3; ++i)
         {
             const String s = "fx" + String (i + 1) + "_";
-            M ("EFFECT " + String (i + 1), 830, 354 + i * 126, 410, 122);
+            M ("EFFECT " + String (i + 1), 830, 354 + i * 130, 410, 120, Acc::fx);
             auto* cb = Cb (s + "type", 10, 22, 150, 20);
             (void) cb;
             T (s + "sync", "SYNC", 172, 24, 56, 16);
@@ -487,7 +504,7 @@ public:
     void buildRight()
     {
         // Mixer
-        M ("MIXER", 1260, 14, 300, 150);
+        M ("MIXER", 1260, 14, 300, 146, Acc::osc);
         const char* nm[6] = { "OSC 1", "OSC 2", "OSC 3", "RING", "NOISE", "SUB" };
         for (int i = 0; i < 6; ++i)
         {
@@ -501,7 +518,7 @@ public:
         Ctext ("SUB WAVE", 100, 104);
         S ("sub_wave", 100, 116, 110, 24, false);
         // Zusatz-Modulation
-        M ("EXTRA MODULATION", 1260, 170, 300, 94);
+        M ("EXTRA MODULATION", 1260, 170, 300, 94, Acc::lfo);
         Ctext ("LFO 4 DESTINATION", 10, 18);
         Cb ("x_l4dest", 10, 30, 130, 18);
         K ("x_l4amt", "AMT", 152, 12, 30);
@@ -511,7 +528,7 @@ public:
         K ("c_moddepth", "WHEEL", 230, 30, 40);
 
         // SVF
-        M ("STATE VARIABLE FILTER", 1570, 14, 190, 250);
+        M ("STATE VARIABLE FILTER", 1570, 14, 190, 250, Acc::filt);
         svfCut = K ("svf_cut", "CUTOFF", 10, 24, 62, true);
         K ("svf_res", "RESO", 80, 30, 46);
         K ("svf_space", "SPACING", 134, 30, 46);
@@ -522,7 +539,7 @@ public:
         S ("svf_fmsrc", 10, 208, 168, 20, false, { "OSC 1", "OSC 2", "OSC 3" });
 
         // Ladder
-        M ("LADDER FILTER", 1770, 14, 190, 250);
+        M ("LADDER FILTER", 1770, 14, 190, 250, Acc::filt);
         ladCut = K ("lad_cut", "CUTOFF", 10, 24, 62, true);
         K ("lad_res", "RESO", 80, 30, 46);
         K ("lad_key", "KEY TRK", 134, 30, 46);
@@ -534,13 +551,14 @@ public:
         S ("lad_fmsrc", 10, 208, 168, 20, false, { "OSC 1", "OSC 2", "OSC 3" });
 
         // Filter gemeinsam
-        M ("FILTER COMMON", 1970, 14, 180, 250);
+        M ("FILTER COMMON", 1970, 14, 180, 250, Acc::filt);
         fEg = new KnobCtl ("EG AMT", 46, show, NormalisableRange<double> (-1.0, 1.0), 0.0, "Filter EG Amount");
         fLfo = new KnobCtl ("LFO 2", 46, show, NormalisableRange<double> (0.0, 1.0), 0.0, "Filter LFO 2 Amount");
         fFm = new KnobCtl ("FM AMT", 46, show, NormalisableRange<double> (0.0, 1.0), 0.0, "Filter FM Amount");
         KnobCtl* fk[3] = { fEg, fLfo, fFm };
         for (int i = 0; i < 3; ++i)
         {
+            fk[i]->slider.setColour (Slider::rotarySliderFillColourId, cur);
             owned.add (fk[i]); addAndMakeVisible (fk[i]);
             fk[i]->setTopLeftPosition (ox + 8 + i * 56, oy + 24);
             fk[i]->setValueText ([i] (double v) { return String (v * 10.0, 1); });
@@ -553,6 +571,7 @@ public:
         addAndMakeVisible (modSvf); addAndMakeVisible (modLad);
         modSvf->setBounds (ox + 6, oy + 104, 78, 16); modLad->setBounds (ox + 84, oy + 104, 94, 16);
         modSvf->setState (true); modLad->setState (true);
+        modSvf->acc = cur; modLad->acc = cur;
         T ("f_link", "LINK CUTOFF", 8, 130, 110, 16);
         Ctext ("ROUTE", 8, 156);
         S ("f_route", 8, 168, 90, 20, false);
@@ -565,7 +584,7 @@ public:
         for (int i = 0; i < 3; ++i)
         {
             const String s = i == 0 ? "feg_" : (i == 1 ? "aeg_" : "meg_");
-            M (en[i], 1260 + i * 300, 274, 290, 200);
+            M (en[i], 1260 + i * 300, 274, 290, 200, Acc::env);
             K (s + "att", "ATTACK", 12, 22, 46);
             K (s + "dec", "DECAY", 80, 22, 46);
             K (s + "sus", "SUSTAIN", 148, 22, 46);
@@ -583,49 +602,48 @@ public:
             T (s + "latch", "LATCH", 190, 168, 70, 15);
         }
         // Ausgang, Programme, Panic
-        M ("OUTPUT", 1260, 484, 300, 250);
-        K ("out_vol", "MASTER VOLUME", 20, 36, 84, true);
-        K ("out_tempo", "TEMPO", 140, 46, 60);
-        Ctext ("START PROGRAM", 14, 142);
+        M ("OUTPUT", 1260, 484, 220, 250, Acc::out);
+        K ("out_vol", "VOLUME", 14, 24, 60);
+        K ("out_tempo", "TEMPO", 132, 30, 50);
+        Ctext ("START PROGRAM", 12, 118);
         progBox = new ComboBox();
         owned.add (progBox); addAndMakeVisible (progBox);
         for (int i = 0; i < proc.getNumPrograms(); ++i) progBox->addItem (proc.getProgramName (i), i + 1);
         progBox->setSelectedId (proc.getCurrentProgram() + 1, dontSendNotification);
-        progBox->setBounds (ox + 14, oy + 156, 150, 22);
+        progBox->setBounds (ox + 12, oy + 130, 196, 22);
         progBox->onChange = [this] { proc.setCurrentProgram (progBox->getSelectedId() - 1); };
+        auto* st = new TextButton ("START SCREEN");
+        owned.add (st); addAndMakeVisible (st);
+        st->setBounds (ox + 12, oy + 162, 94, 24);
+        st->onClick = [this] { showStart (true); };
         auto* pan = new TextButton ("PANIC");
         owned.add (pan); addAndMakeVisible (pan);
         pan->setColour (TextButton::textColourOffId, Colour (0xffff1f3f));
-        pan->setBounds (ox + 184, oy + 154, 100, 26);
+        pan->setBounds (ox + 114, oy + 162, 94, 24);
         pan->onClick = [this] { proc.panic(); };
-        auto* st = new TextButton ("START SCREEN");
-        owned.add (st); addAndMakeVisible (st);
-        st->setBounds (ox + 184, oy + 124, 100, 24);
-        st->onClick = [this] { showStart (true); };
-        Ctext ("Programme sind nur Startpunkte, alles bleibt editierbar.", 14, 196);
-        Ctext ("Panic: alle Noten stumm, Hold aus.", 14, 208);
-        Ctext ("Mit Host-Tempo laeuft Sync automatisch.", 14, 220);
-        Ctext ("Ohne Host (Standalone) gilt der Tempo-Wert.", 14, 232);
+        Ctext ("Panic: alle Noten stumm, Hold aus.", 12, 200);
+        Ctext ("Ohne Host gilt der TEMPO-Wert.", 12, 214);
 
         // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
-        M ("STEP SEQUENCER", 1580, 484, 570, 250);
-        T ("seq_on", "SEQ ON", 8, 20, 84, 16);
-        T ("seq_latch", "LATCH", 8, 38, 84, 16);
-        Ctext ("RATE", 8, 58, 8.5f);
-        Cb ("seq_rate", 8, 69, 86, 18);
-        Ctext ("ORDER", 8, 90, 8.5f);
-        Cb ("seq_order", 8, 101, 86, 18);
-        K ("seq_len", "STEPS", 4, 122, 30);
-        K ("seq_gate", "GATE", 50, 122, 30);
+        M ("STEP SEQUENCER", 1490, 484, 660, 250, Acc::seq);
+        T ("seq_on", "SEQ ON", 8, 22, 88, 16);
+        T ("seq_latch", "LATCH", 8, 40, 88, 16);
+        Ctext ("RATE", 8, 60, 8.5f);
+        Cb ("seq_rate", 8, 71, 88, 18);
+        Ctext ("ORDER", 8, 92, 8.5f);
+        Cb ("seq_order", 8, 103, 88, 18);
+        K ("seq_len", "STEPS", 4, 124, 30);
+        K ("seq_gate", "GATE", 52, 124, 30);
         for (int i = 0; i < kSeqSteps; ++i)
         {
-            const int x = 100 + i * 29;
+            const int x = 104 + i * 34;
             const String n (i + 1);
             stageX[i] = ox + x;
-            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 1, oy + 34, 26, 84);
-            auto* fc = new FaderCtl (apvts, "seq_c" + n, show, true);  owned.add (fc); addAndMakeVisible (fc); fc->setBounds (ox + x + 1, oy + 122, 26, 52);
-            S ("seq_g" + n, x + 8, 177, 18, 42, true, { "", "", "", "" });
-            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 1, oy + 224, 27, 18);
+            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 4, oy + 31, 26, 62);
+            auto* fo = new FaderCtl (apvts, "seq_o" + n, show, true, cur);  owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 4, oy + 96, 26, 30);
+            auto* fc = new FaderCtl (apvts, "seq_c" + n, show, true, cur);  owned.add (fc); addAndMakeVisible (fc); fc->setBounds (ox + x + 4, oy + 130, 26, 46);
+            S ("seq_g" + n, x + 12, 180, 18, 36, true, { "", "", "", "" });
+            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 3, oy + 222, 29, 18);
         }
     }
 
@@ -699,7 +717,7 @@ public:
             }
         }
         syncFilterKnobs();
-        repaint (1580, 484, 570, 40);
+        repaint (1490, 484, 660, 40);
         if (! svfCut->slider.isMouseButtonDown() && ! ladCut->slider.isMouseButtonDown())
         { lastCut[0] = (float) svfCut->slider.getValue(); lastCut[1] = (float) ladCut->slider.getValue(); }
     }
@@ -734,11 +752,14 @@ public:
             g.setColour (Colour (0xff2b2e35));
             g.drawRoundedRectangle (r, 6.0f, 1.0f);
             g.setFont (F (10.5f).withExtraKerningFactor (0.1f));
-            const float tw = F (10.5f).withExtraKerningFactor (0.1f).getStringWidthFloat (m.title) + 12.0f;
+            const float tw = F (10.5f).withExtraKerningFactor (0.1f).getStringWidthFloat (m.title) + 24.0f;
             g.setColour (Colour (0xff1d1f24));
             g.fillRect (r.getX() + 9.0f, r.getY() - 2.0f, tw, 5.0f);
+            auto dot = Rectangle<float> (7.0f, 7.0f).withCentre ({ r.getX() + 18.0f, r.getY() });
+            g.setColour (m.acc.withAlpha (0.35f)); g.fillEllipse (dot.expanded (3.0f));
+            g.setColour (m.acc); g.fillEllipse (dot);
             g.setColour (Col::text);
-            g.drawText (m.title, Rectangle<int> (m.r.getX() + 14, m.r.getY() - 8, (int) tw, 16), Justification::centredLeft, false);
+            g.drawText (m.title, Rectangle<int> (m.r.getX() + 26, m.r.getY() - 8, (int) tw, 16), Justification::centredLeft, false);
         }
         for (auto& c : caps)
         {
@@ -748,21 +769,21 @@ public:
         }
         // Sequencer: Legende, Stufennummern und Lauf-LED
         {
-            const int mx = 1580, my = 484;
+            const int mx = 1490, my = 484;
             g.setColour (Col::textDim);
             g.setFont (F (7.5f));
             const char* gl[4] = { "REST", "ONE", "MULTI", "HOLD" };
-            for (int k = 0; k < 4; ++k) g.drawText (gl[k], Rectangle<int> (mx + 40, my + 177 + k * 10 + 1, 64, 10), Justification::centredRight, false);
-            g.drawText ("GATE TYPE", Rectangle<int> (mx + 8, my + 177 + 15, 40, 10), Justification::centredLeft, false);
-            g.drawText ("STEP", Rectangle<int> (mx + 40, my + 228, 56, 10), Justification::centredRight, false);
+            for (int k = 0; k < 4; ++k) g.drawText (gl[k], Rectangle<int> (mx + 40, my + 180 + k * 9, 64, 9), Justification::centredRight, false);
+            g.drawText ("TYPE", Rectangle<int> (mx + 8, my + 193, 40, 10), Justification::centredLeft, false);
+            g.drawText ("STEP", Rectangle<int> (mx + 40, my + 226, 64, 10), Justification::centredRight, false);
             const int cur = proc.seqStage.load();
             const int len = (int) std::lround (apvts.getRawParameterValue ("seq_len")->load());
             for (int i = 0; i < TO::kSeqSteps; ++i)
             {
                 g.setColour (i < len ? Col::text : Col::textDim.withAlpha (0.4f));
                 g.setFont (F (8.5f));
-                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 12, 29, 10), Justification::centred, false);
-                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 14.5f, (float) my + 28.0f }), i == cur);
+                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 9, 34, 10), Justification::centred, false);
+                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 17.0f, (float) my + 24.0f }), i == cur, Acc::seq);
             }
         }
     }

@@ -35,7 +35,7 @@ public:
     void drawButtonText (juce::Graphics&, juce::TextButton&, bool, bool) override;
 };
 
-void drawLed (juce::Graphics& g, juce::Rectangle<float> r, bool on);
+void drawLed (juce::Graphics& g, juce::Rectangle<float> r, bool on, juce::Colour c = Col::led);
 
 // Drehregler im Stil des Originals (Label oben, Wert erscheint im LCD)
 class KnobCtl : public juce::Component
@@ -77,6 +77,8 @@ private:
     juce::RangedAudioParameter* param = nullptr;
     juce::String label;
     bool on = false;
+public:
+    juce::Colour acc = Col::led;
 };
 
 class SelectorCtl : public juce::Component
@@ -91,6 +93,8 @@ private:
     std::vector<juce::String> labels;
     bool vertical;
     int current = 0;
+public:
+    juce::Colour acc = Col::led;
 };
 
 class ComboCtl : public juce::Component
