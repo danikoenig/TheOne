@@ -254,8 +254,28 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
     {
         const int st = seqStageIdx;
         if (modeOf (st) != 0) { noteOffAt (pos); seqOffIn = -1.0; seqPrevSlide = false; return; }   // MUTE/SKIP
-        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + st]) + 12 * (int) std::lround (P[SEQ0 + SQ_OCT0 + st]));
-        const float vel = P[SEQ0 + SQ_ACC0 + st] > 0.5f ? 1.0f : 0.62f;
+        // Zufall: Pitch von einem anderen aktiven Step, Oktave springt, Accent kippt
+        const float chance = P[SEQ0 + SQ_RND];
+        auto roll = [&] { return chance > 0.0f && seqRng.nextFloat() < chance; };
+        int pitch = (int) std::lround (P[SEQ0 + SQ_PITCH0 + st]);
+        int oct = (int) std::lround (P[SEQ0 + SQ_OCT0 + st]);
+        bool acc = P[SEQ0 + SQ_ACC0 + st] > 0.5f;
+        if (P[SEQ0 + SQ_RNDP] > 0.5f && roll())
+        {
+            int cand[kSeqSteps], nc = 0;
+            for (int i = 0; i < len; ++i) if (i != st && modeOf (i) == 0) cand[nc++] = i;
+            if (nc > 0) pitch = (int) std::lround (P[SEQ0 + SQ_PITCH0 + cand[seqRng.nextInt (nc)]]);
+        }
+        if (P[SEQ0 + SQ_RNDO] > 0.5f && roll())
+        {
+            const int d = seqRng.nextBool() ? 1 : -1;
+            oct = (oct + d > 1 || oct + d < -1) ? oct - d : oct + d;
+        }
+        if (P[SEQ0 + SQ_RNDA] > 0.5f && roll()) acc = ! acc;
+        const int note = jlimit (0, 127, seqRoot + pitch + 12 * oct);
+        float vel = acc ? 1.0f : 0.62f;
+        if (const float vr = P[SEQ0 + SQ_VELRND]; vr > 0.0f)   // Velocity-Zufall: 0 = fest
+            vel = jlimit (0.08f, 1.0f, vel * (1.0f + (seqRng.nextFloat() * 2.0f - 1.0f) * vr * 0.45f));
         if (seqPrevSlide && seqSounding >= 0)
         {
             if (note != seqSounding) out.addEvent (MidiMessage::controllerEvent (16, seqSounding, note), pos);

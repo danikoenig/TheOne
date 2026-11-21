@@ -2,7 +2,12 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.3.1
+### New in v1.4.0
+- Sequencer random: RND switches for PITCH (borrows the pitch of another active step), OCTAVE (jumps up or down) and ACCENT (moves around), with a shared RND amount
+- VEL: random velocity from fixed to loose
+- Tidier sequencer controls: SEQ ON / LATCH, RATE / ORDER side by side, LEN, GATE, RND, VEL in one row
+
+### v1.3.1
 - Oscillator RESET renamed to PHASE RESET (each note starts the wave at its beginning), TRI/SAW moved next to the octave selector
 
 ### v1.3.0

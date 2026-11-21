@@ -136,6 +136,8 @@ HOW TO USE (SHORT)
   the next step without a new attack), ACCENT (louder, brighter) and the STEP
   button (ON / MUTE / SKIP).
   ORDER: forward, reverse, ping-pong or random. LATCH keeps it running.
+  RND switches (PITCH, OCTAVE, ACCENT) let steps vary now and then, the RND
+  knob sets how often. VEL adds random velocity.
 - The keyboard at the bottom can be played with the mouse and shows pressed keys.
 
 
@@ -309,7 +311,9 @@ KURZ ZUR BEDIENUNG
   ab dieser Taste transponiert. Pro Stufe: PITCH, OCTAVE (-1 / 0 / +1), SLIDE
   (gleitet ohne Neuanschlag in den nächsten Step), ACCENT (lauter, heller) und
   die STEP-Taste (ON / MUTE / SKIP). ORDER: vorwärts, rückwärts, Ping-Pong oder zufällig.
-  LATCH lässt die Sequenz weiterlaufen.
+  LATCH lässt die Sequenz weiterlaufen. RND-Schalter (PITCH, OCTAVE, ACCENT)
+  lassen Steps ab und zu variieren, der RND-Regler bestimmt wie oft.
+  VEL gibt zufällige Velocity dazu.
 - Die Tastatur unten spielst du mit der Maus, gedrückte Tasten leuchten orange.
 
 

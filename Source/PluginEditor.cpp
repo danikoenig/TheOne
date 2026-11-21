@@ -670,24 +670,29 @@ public:
 
         // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
         M ("STEP SEQUENCER", 1430, 484, 720, 250, Acc::seq);
-        T ("seq_on", "SEQ ON", 8, 18, 88, 16);
-        T ("seq_latch", "LATCH", 8, 36, 88, 16);
-        Ctext ("RATE", 8, 55, 8.5f);
-        Cb ("seq_rate", 8, 66, 92, 18);
-        Ctext ("ORDER", 8, 87, 8.5f);
-        Cb ("seq_order", 8, 98, 92, 18);
-        K ("seq_len", "LENGTH", 4, 118, 34);
-        K ("seq_gate", "GATE", 56, 118, 34);
+        T ("seq_on", "SEQ ON", 4, 16, 68, 15);
+        T ("seq_latch", "LATCH", 74, 16, 64, 15);
+        Ctext ("RATE", 6, 38, 8.5f);
+        Ctext ("ORDER", 74, 38, 8.5f);
+        Cb ("seq_rate", 4, 49, 64, 18);
+        Cb ("seq_order", 72, 49, 64, 18);
+        K ("seq_len", "LEN", 2, 76, 30);
+        K ("seq_gate", "GATE", 36, 76, 30);
+        K ("seq_rnd", "RND", 70, 76, 30);
+        K ("seq_velrnd", "VEL", 104, 76, 30);
+        T ("seq_rndp", "RND", 4, 140, 60, 15);
+        T ("seq_rndo", "RND", 4, 162, 60, 15);
+        T ("seq_rnda", "RND", 4, 202, 60, 15);
         for (int i = 0; i < kSeqSteps; ++i)
         {
-            const int x = 108 + i * 38;
+            const int x = 144 + i * 36;
             const String n (i + 1);
             stageX[i] = ox + x;
-            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur, true); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 5, oy + 30, 28, 128);
-            auto* fo = new OctBtn (apvts, "seq_o" + n, show, cur); owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 3, oy + 162, 32, 17);
-            auto* sl = new StepModeBtn (apvts, "seq_sl" + n, show, cur, { "SLIDE", "SLIDE" }, 1); owned.add (sl); addAndMakeVisible (sl); sl->setBounds (ox + x + 3, oy + 182, 32, 17);
-            auto* ac = new StepModeBtn (apvts, "seq_ac" + n, show, cur, { "ACC", "ACC" }, 1);     owned.add (ac); addAndMakeVisible (ac); ac->setBounds (ox + x + 3, oy + 202, 32, 17);
-            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 3, oy + 222, 32, 18);
+            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false, cur, true); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 4, oy + 30, 28, 128);
+            auto* fo = new OctBtn (apvts, "seq_o" + n, show, cur); owned.add (fo); addAndMakeVisible (fo); fo->setBounds (ox + x + 2, oy + 162, 32, 17);
+            auto* sl = new StepModeBtn (apvts, "seq_sl" + n, show, cur, { "SLIDE", "SLIDE" }, 1); owned.add (sl); addAndMakeVisible (sl); sl->setBounds (ox + x + 2, oy + 182, 32, 17);
+            auto* ac = new StepModeBtn (apvts, "seq_ac" + n, show, cur, { "ACC", "ACC" }, 1);     owned.add (ac); addAndMakeVisible (ac); ac->setBounds (ox + x + 2, oy + 202, 32, 17);
+            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show, cur); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 2, oy + 222, 32, 18);
         }
     }
 
@@ -830,22 +835,23 @@ public:
             for (int b = 0; b < 4; ++b)
             {
                 g.setColour (b % 2 == 0 ? Colours::white.withAlpha (0.035f) : Colours::black.withAlpha (0.12f));
-                g.fillRoundedRectangle (Rectangle<float> ((float) (mx + 108 + b * 152), (float) my + 5.0f, 152.0f, 240.0f).reduced (1.5f, 0.0f), 4.0f);
+                g.fillRoundedRectangle (Rectangle<float> ((float) (mx + 144 + b * 144), (float) my + 5.0f, 144.0f, 240.0f).reduced (1.5f, 0.0f), 4.0f);
             }
             g.setColour (Col::textDim);
             g.setFont (F (7.5f));
-            g.drawText ("SLIDE", Rectangle<int> (mx + 40, my + 185, 64, 10), Justification::centredRight, false);
-            g.drawText ("ACCENT", Rectangle<int> (mx + 40, my + 205, 64, 10), Justification::centredRight, false);
-            g.drawText ("OCTAVE", Rectangle<int> (mx + 40, my + 165, 64, 10), Justification::centredRight, false);
-            g.drawText ("STEP", Rectangle<int> (mx + 40, my + 226, 64, 10), Justification::centredRight, false);
+            g.drawText ("SLIDE", Rectangle<int> (mx + 64, my + 185, 76, 10), Justification::centredRight, false);
+            g.drawText ("ACCENT", Rectangle<int> (mx + 64, my + 205, 76, 10), Justification::centredRight, false);
+            g.drawText ("OCTAVE", Rectangle<int> (mx + 64, my + 165, 76, 10), Justification::centredRight, false);
+            g.drawText ("PITCH", Rectangle<int> (mx + 64, my + 143, 76, 10), Justification::centredRight, false);
+            g.drawText ("STEP", Rectangle<int> (mx + 64, my + 226, 76, 10), Justification::centredRight, false);
             const int cur = proc.seqStage.load();
             const int len = (int) std::lround (apvts.getRawParameterValue ("seq_len")->load());
             for (int i = 0; i < TO::kSeqSteps; ++i)
             {
                 g.setColour (i < len ? Col::text : Col::textDim.withAlpha (0.4f));
                 g.setFont (F (8.5f));
-                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 9, 38, 10), Justification::centred, false);
-                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 19.0f, (float) my + 24.0f }), i == cur, Acc::seq);
+                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 9, 36, 10), Justification::centred, false);
+                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 18.0f, (float) my + 24.0f }), i == cur, Acc::seq);
             }
         }
     }

@@ -34,7 +34,7 @@ enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD,
 enum { FX_TYPE, FX_MIX, FX_P1, FX_P2, FX_P3, FX_P4, FX_P5, FX_SYNC, FX_N };
 enum { OUT_VOL, OUT_TEMPO, OUT_N };
 constexpr int kSeqSteps = 16;
-enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_PITCH0, SQ_SLIDE0 = SQ_PITCH0 + kSeqSteps, SQ_ACC0 = SQ_SLIDE0 + kSeqSteps, SQ_MODE0 = SQ_ACC0 + kSeqSteps, SQ_OCT0 = SQ_MODE0 + kSeqSteps, SQ_N = SQ_OCT0 + kSeqSteps };
+enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_RND, SQ_RNDP, SQ_RNDO, SQ_RNDA, SQ_VELRND, SQ_PITCH0, SQ_SLIDE0 = SQ_PITCH0 + kSeqSteps, SQ_ACC0 = SQ_SLIDE0 + kSeqSteps, SQ_MODE0 = SQ_ACC0 + kSeqSteps, SQ_OCT0 = SQ_MODE0 + kSeqSteps, SQ_N = SQ_OCT0 + kSeqSteps };
 
 constexpr int OSC0 = 0;
 constexpr int MIX0 = OSC0 + 3 * O_N;
@@ -260,7 +260,12 @@ inline std::vector<PDef> makeDefs()
     C ("seq_rate", "Seq Rate", { "1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32", "1/32T" }, 3);
     F ("seq_len", "Seq Length", 1, 16, 16, dInt);
     F ("seq_gate", "Seq Gate Length", 0.05f, 1, 0.5f, dPct);
-    C ("seq_order", "Seq Order", { "FWD", "REV", "PING", "RANDOM" }, 0);
+    C ("seq_order", "Seq Order", { "FWD", "REV", "PING", "RND" }, 0);
+    F ("seq_rnd", "Seq Random Amount", 0, 1, 0.3f, dPct);
+    B ("seq_rndp", "Seq Random Pitch", false);
+    B ("seq_rndo", "Seq Random Octave", false);
+    B ("seq_rnda", "Seq Random Accent", false);
+    F ("seq_velrnd", "Seq Random Velocity", 0, 1, 0, dPct);
     const int defP[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     for (int i = 0; i < kSeqSteps; ++i) F ("seq_p" + std::to_string (i + 1), "Seq Pitch " + std::to_string (i + 1), -24, 24, (float) defP[i], dStep);
     for (int i = 0; i < kSeqSteps; ++i) B ("seq_sl" + std::to_string (i + 1), "Seq Slide " + std::to_string (i + 1), false);
