@@ -7,15 +7,15 @@ static Font F (float h, bool bold = true) { return Font (FontOptions (h, bold ? 
 
 TheOneLook::TheOneLook()
 {
-    setColour (ComboBox::backgroundColourId, Colour (0xff0c0c0e));
+    setColour (ComboBox::backgroundColourId, Colour (0xff121317));
     setColour (ComboBox::outlineColourId, Col::line.withAlpha (0.55f));
     setColour (ComboBox::textColourId, Col::text);
     setColour (ComboBox::arrowColourId, Col::led);
-    setColour (PopupMenu::backgroundColourId, Colour (0xff101012));
+    setColour (PopupMenu::backgroundColourId, Colour (0xff1d1f24));
     setColour (PopupMenu::textColourId, Col::text);
     setColour (PopupMenu::highlightedBackgroundColourId, Col::led.darker (0.3f));
     setColour (PopupMenu::highlightedTextColourId, Colours::white);
-    setColour (TextButton::buttonColourId, Colour (0xff1b1b1e));
+    setColour (TextButton::buttonColourId, Colour (0xff26282e));
     setColour (TextButton::textColourOffId, Col::text);
 }
 
@@ -59,7 +59,7 @@ void TheOneLook::drawRotarySlider (Graphics& g, int x, int y, int w, int h, floa
     g.setColour (Colours::black.withAlpha (0.55f));
     g.fillEllipse (body.expanded (1.5f).translated (0.0f, 1.5f));
     // Koerper (Zylinder von oben)
-    g.setGradientFill (ColourGradient (Colour (0xff3b3b40), body.getX(), body.getY(), Colour (0xff0a0a0b), body.getRight(), body.getBottom(), false));
+    g.setGradientFill (ColourGradient (Colour (0xff3a3e47), body.getX(), body.getY(), Colour (0xff16171b), body.getRight(), body.getBottom(), false));
     g.fillEllipse (body);
     // Rillen am Rand
     const int ridges = big ? 40 : 28;
@@ -73,7 +73,7 @@ void TheOneLook::drawRotarySlider (Graphics& g, int x, int y, int w, int h, floa
     g.drawEllipse (body.reduced (0.5f), 1.0f);
     // Kappe
     auto cap = body.reduced (bodyR * 0.22f);
-    g.setGradientFill (ColourGradient (Colour (0xff2b2b2f), cap.getX(), cap.getY(), Colour (0xff111113), cap.getRight(), cap.getBottom(), false));
+    g.setGradientFill (ColourGradient (Colour (0xff33363e), cap.getX(), cap.getY(), Colour (0xff1d1f24), cap.getRight(), cap.getBottom(), false));
     g.fillEllipse (cap);
     g.setColour (Colours::white.withAlpha (s.isMouseOverOrDragging() ? 0.22f : 0.1f));
     g.drawEllipse (cap, 0.8f);
@@ -86,7 +86,7 @@ void TheOneLook::drawRotarySlider (Graphics& g, int x, int y, int w, int h, floa
 void TheOneLook::drawComboBox (Graphics& g, int w, int h, bool, int, int, int, int, ComboBox& box)
 {
     auto r = Rectangle<float> (0, 0, (float) w, (float) h).reduced (0.5f);
-    g.setColour (Colour (0xff0c0c0e));
+    g.setColour (Colour (0xff121317));
     g.fillRoundedRectangle (r, 3.0f);
     g.setColour (box.hasKeyboardFocus (false) ? Col::led : Col::line.withAlpha (0.55f));
     g.drawRoundedRectangle (r, 3.0f, 1.0f);
@@ -102,7 +102,7 @@ Font TheOneLook::getPopupMenuFont() { return F (13.0f, false); }
 void TheOneLook::drawButtonBackground (Graphics& g, Button& b, const Colour&, bool hi, bool down)
 {
     auto r = b.getLocalBounds().toFloat().reduced (0.5f);
-    g.setColour (down ? Colour (0xff35353a) : (hi ? Colour (0xff27272b) : Colour (0xff1b1b1e)));
+    g.setColour (down ? Colour (0xff3a3e47) : (hi ? Colour (0xff2c2f36) : Colour (0xff26282e)));
     g.fillRoundedRectangle (r, 3.0f);
     g.setColour (Col::line.withAlpha (0.55f));
     g.drawRoundedRectangle (r, 3.0f, 1.0f);
@@ -175,10 +175,10 @@ void LedToggle::paint (Graphics& g)
 {
     const float h = jmin (15.0f, (float) getHeight());
     auto body = Rectangle<float> (0.5f, ((float) getHeight() - h) * 0.5f + 0.5f, 26.0f, h - 1.0f);
-    g.setColour (Colour (0xff0e0e10));
+    g.setColour (Colour (0xff121317));
     g.fillRoundedRectangle (body.expanded (1.5f), 3.0f);
     g.setGradientFill (on ? ColourGradient (Col::led.brighter (0.25f), 0, body.getY(), Col::led.darker (0.5f), 0, body.getBottom(), false)
-                          : ColourGradient (Colour (0xff2e2e33), 0, body.getY(), Colour (0xff17171a), 0, body.getBottom(), false));
+                          : ColourGradient (Colour (0xff3a3e47), 0, body.getY(), Colour (0xff1d1f24), 0, body.getBottom(), false));
     g.fillRoundedRectangle (body, 2.5f);
     if (on)
     {
@@ -269,7 +269,7 @@ void WheelCtl::paint (Graphics& g)
     auto wheel = r.withTrimmedBottom (14.0f);
     g.setColour (Colours::black);
     g.fillRoundedRectangle (wheel.expanded (2.0f), 6.0f);
-    g.setGradientFill (ColourGradient (Colour (0xff0b0b0c), wheel.getX(), 0, Colour (0xff0b0b0c), wheel.getRight(), 0, false));
+    g.setGradientFill (ColourGradient (Colour (0xff121317), wheel.getX(), 0, Colour (0xff121317), wheel.getRight(), 0, false));
     g.fillRoundedRectangle (wheel, 5.0f);
     // Walze mit Rillen, Position verschiebt die Rillen
     g.saveState();
@@ -279,7 +279,7 @@ void WheelCtl::paint (Graphics& g)
     {
         const float y = wheel.getBottom() - (float) i * 7.0f + pos * 28.0f - 14.0f;
         const float k = (y - wheel.getY()) / wheel.getHeight();
-        g.setColour (Colour (0xff4a4a50).withAlpha (0.55f + 0.4f * std::sin (k * MathConstants<float>::pi)));
+        g.setColour (Colour (0xff5a5e68).withAlpha (0.55f + 0.4f * std::sin (k * MathConstants<float>::pi)));
         g.fillRect (wheel.getX() + 4.0f, y, wheel.getWidth() - 8.0f, 2.0f);
     }
     g.setGradientFill (ColourGradient (Colours::black.withAlpha (0.8f), 0, wheel.getY(), Colours::transparentBlack, 0, wheel.getY() + 22.0f, false));
@@ -305,14 +305,14 @@ WaveView::WaveView (AudioProcessorValueTreeState& apvts, int osc)
 void WaveView::paint (Graphics& g)
 {
     auto r = getLocalBounds().toFloat();
-    g.setColour (Colour (0xff020203));
+    g.setColour (Colour (0xff0d0e11));
     g.fillRoundedRectangle (r, 4.0f);
     g.setColour (Col::line.withAlpha (0.45f));
     g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
     auto a = r.reduced (8.0f, 8.0f);
     const float ang = angle->load(), mx = mix->load(), duty = 0.02f + 0.96f * pw->load();
     const bool saw = wave->load() > 0.5f;
-    const float s = saw ? jlimit (0.02f, 0.98f, 1.0f - (6e-6f + ang * 1e-3f) * 120.0f) : jlimit (0.02f, 0.98f, 1.0f - ang);
+    const float s = saw ? jlimit (0.02f, 0.98f, 1.0f - (6e-6f + ang * 1e-3f) * 120.0f) : jlimit (0.02f, 0.98f, 0.5f + 0.5f * ang);
     Path p;
     const int N = 200;
     for (int i = 0; i <= N; ++i)
@@ -349,7 +349,7 @@ void KeyboardView::drawBlackNote (int, Graphics& g, Rectangle<float> a, bool isD
     g.setColour (Colours::black);
     g.fillRect (k.expanded (1.0f, 0.0f).withTrimmedTop (-1.0f));
     g.setGradientFill (isDown ? ColourGradient (Col::led, 0, k.getY(), Col::led.darker (0.5f), 0, k.getBottom(), false)
-                              : ColourGradient (isOver ? Colour (0xff3b3b40) : Colour (0xff2a2a2e), 0, k.getY(), Colour (0xff09090a), 0, k.getBottom(), false));
+                              : ColourGradient (isOver ? Colour (0xff3a3e47) : Colour (0xff33363e), 0, k.getY(), Colour (0xff16171b), 0, k.getBottom(), false));
     g.fillRect (k);
     g.setColour (Colours::white.withAlpha (0.08f));
     g.fillRect (k.withTrimmedBottom (k.getHeight() * 0.8f).reduced (3.0f, 0.0f));

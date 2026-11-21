@@ -180,6 +180,7 @@ void Synth::startNote (int key, int note, float vel, int u, int U, int ci, bool 
     }
     else
         for (int k = 0; k < 3; ++k) if (P[oscP (k, O_RESET)] > 0.5f) v.osc[k].ph = 0.0;
+    v.subPh = 0.0;
     for (int l = 0; l < 4; ++l) { v.lfo[l].ph = P[lfoP (l, L_PHASE)]; v.lfo[l].sh = v.rng.next(); }
     for (auto& e : v.env) e.gateOn (retrigger);
     v.nenv.gateOn (retrigger);
@@ -295,6 +296,14 @@ void Synth::allNotesOff()
     for (auto& v : voices) if (v.active) releaseVoice (v);
     monoStack.clear();
     keysDown = 0;
+}
+
+void Synth::panic()
+{
+    for (auto& v : voices) { v.active = false; v.gate = false; v.sustained = false; }
+    monoStack.clear();
+    keysDown = 0;
+    pedal = false;
 }
 
 //==============================================================================
@@ -416,13 +425,15 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
     }
     const float noiseColorMix = p[NOI0 + N_MIX];
     const int noisePair = (int) std::lround (p[NOI0 + N_PAIR]);
-    float lvl[5], rs[5], rl[5];
-    for (int j = 0; j < 5; ++j)
+    float lvl[6], rs[6], rl[6];
+    for (int j = 0; j < 6; ++j)
     {
         lvl[j] = p[MIX0 + MX_LVL + j];
         rs[j] = p[MIX0 + MX_SVF + j] > 0.5f ? 1.0f : 0.0f;
         rl[j] = p[MIX0 + MX_LAD + j] > 0.5f ? 1.0f : 0.0f;
     }
+    const float subMul = p[MIX0 + MX_SUBOCT] > 0.5f ? 0.25f : 0.5f;
+    const bool subSq = p[MIX0 + MX_SUBWAVE] > 0.5f;
     const int svfMode = (int) std::lround (p[FIL0 + F_SVF_MODE]);
     const bool svfSer = p[FIL0 + F_SVF_SER] > 0.5f;
     const int ladMode = (int) std::lround (p[FIL0 + F_LAD_MODE]);
@@ -517,7 +528,7 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
                 s = std::clamp (1.0f - r, 2.0f * dtk, 1.0f - 2.0f * dtk);
             }
             else
-                s = std::clamp (1.0f - angle, 2.0f * dtk, 1.0f - 2.0f * dtk);
+                s = std::clamp (0.5f + 0.5f * angle, 2.0f * dtk, 1.0f - 2.0f * dtk);
 
             if (k == 0)
             {
@@ -563,9 +574,25 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
 
         // Mixer
         const float ring = ringSrc == 0 ? raw[0] * raw[1] : raw[1] * raw[2];
-        const float sig[5] = { val[0] * lvl[0], val[1] * lvl[1], val[2] * lvl[2], ring * lvl[3], noise * lvl[4] };
+        // Sub-Oszillator: folgt VCO 1, eine oder zwei Oktaven tiefer
+        float sub;
+        {
+            const float sinc = std::max (inc[0] * subMul, 1e-7f);
+            v.subPh += (double) sinc;
+            if (v.subPh >= 1.0) v.subPh -= 1.0;
+            const float sp = (float) v.subPh;
+            if (subSq)
+            {
+                sub = (sp < 0.5f ? 0.7f : -0.7f);
+                sub += 0.7f * blep (sp, sinc);
+                const float q = sp < 0.5f ? sp + 0.5f : sp - 0.5f;
+                sub -= 0.7f * blep (q, sinc);
+            }
+            else sub = std::sin (6.2831853f * sp);
+        }
+        const float sig[6] = { val[0] * lvl[0], val[1] * lvl[1], val[2] * lvl[2], ring * lvl[3], noise * lvl[4], sub * lvl[5] };
         float busS = 0.0f, busL = 0.0f;
-        for (int j = 0; j < 5; ++j) { busS += sig[j] * rs[j]; busL += sig[j] * rl[j]; }
+        for (int j = 0; j < 6; ++j) { busS += sig[j] * rs[j]; busL += sig[j] * rl[j]; }
 
         // Filter-Koeffizienten (alle 4 Samples)
         if ((i & 3) == 0)

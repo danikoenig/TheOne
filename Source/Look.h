@@ -7,17 +7,17 @@
 
 namespace Col
 {
-    const juce::Colour panelTop    { 0xff131315 };
-    const juce::Colour panelBottom { 0xff09090a };
-    const juce::Colour line        { 0xffb9bbc2 };
+    const juce::Colour panelTop    { 0xff17181c };
+    const juce::Colour panelBottom { 0xff0d0e11 };
+    const juce::Colour line        { 0xff6a6f7a };
     const juce::Colour text        { 0xffeceef2 };
-    const juce::Colour textDim     { 0xff9a9ca6 };
-    const juce::Colour led         { 0xffff2d2f };
-    const juce::Colour ledOff      { 0xff3a1517 };
-    const juce::Colour knobBody    { 0xff1c1c1f };
-    const juce::Colour knobRim     { 0xff55565d };
-    const juce::Colour lcdBg       { 0xff050506 };
-    const juce::Colour lcdLine     { 0xff2c2d33 };
+    const juce::Colour textDim     { 0xff7d828c };
+    const juce::Colour led         { 0xffff9a4d };
+    const juce::Colour ledOff      { 0xff3a2e22 };
+    const juce::Colour knobBody    { 0xff26282e };
+    const juce::Colour knobRim     { 0xff4a4e58 };
+    const juce::Colour lcdBg       { 0xff121317 };
+    const juce::Colour lcdLine     { 0xff2b2e35 };
 }
 
 using ShowFn = std::function<void (const juce::String&, const juce::String&)>;

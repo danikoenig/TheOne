@@ -8,7 +8,7 @@
 namespace TO
 {
 enum Kind { kFloat, kBool, kChoice };
-enum Disp { dNum, dPct, dCut, dTime, dDelay, dSemi, dHz, dCents, dInt, dBpm, dTen, dCurve, dLfoRate, dBeatHz, dDb };
+enum Disp { dNum, dPct, dCut, dTime, dDelay, dSemi, dHz, dCents, dInt, dBpm, dTen, dCurve, dLfoRate, dBeatHz, dDb, dStep };
 
 struct PDef
 {
@@ -21,7 +21,7 @@ struct PDef
 
 // ---- Feld-Indizes je Modul --------------------------------------------------
 enum { O_OCT, O_FREQ, O_BEAT, O_WAVE, O_ANGLE, O_PW, O_MIX, O_SYNC, O_TRACK, O_RESET, O_N };
-enum { MX_LVL = 0, MX_SVF = 5, MX_LAD = 10, MX_N = 15 };           // Kanaele: OSC1, OSC2, OSC3, RING, NOISE
+enum { MX_LVL = 0, MX_SVF = 6, MX_LAD = 12, MX_SUBOCT = 18, MX_SUBWAVE = 19, MX_N = 20 };   // Kanaele: OSC1, OSC2, OSC3, RING, NOISE, SUB
 enum { C_LFO1, C_MEPITCH, C_RINGSRC, C_LFO3ANG, C_LFO3PW, C_FM, C_FMROUTE, C_BEND, C_MODDEPTH, C_N };
 enum { N_ATT, N_REL, N_SUS, N_PAIR, N_MIX, N_N };
 enum { F_SVF_CUT, F_SVF_RES, F_SVF_MODE, F_SVF_SPACE, F_SVF_SER, F_SVF_KEY, F_SVF_EG, F_SVF_LFO, F_SVF_FM, F_SVF_FMSRC,
@@ -33,6 +33,8 @@ enum { X_L4DEST, X_L4AMT, X_MEDEST, X_MEAMT, X_N };
 enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD, V_CHORD, V_LEARN, V_SILENT, V_SPREAD, V_MULTI, V_N };
 enum { FX_TYPE, FX_MIX, FX_P1, FX_P2, FX_P3, FX_P4, FX_P5, FX_SYNC, FX_N };
 enum { OUT_VOL, OUT_TEMPO, OUT_N };
+constexpr int kSeqSteps = 16;
+enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_PITCH0, SQ_PULSE0 = SQ_PITCH0 + kSeqSteps, SQ_TYPE0 = SQ_PULSE0 + kSeqSteps, SQ_MODE0 = SQ_TYPE0 + kSeqSteps, SQ_N = SQ_MODE0 + kSeqSteps };
 
 constexpr int OSC0 = 0;
 constexpr int MIX0 = OSC0 + 3 * O_N;
@@ -45,7 +47,11 @@ constexpr int XTR0 = LFO0 + 4 * L_N;
 constexpr int VOI0 = XTR0 + X_N;
 constexpr int FXS0 = VOI0 + V_N;
 constexpr int OUT0 = FXS0 + 3 * FX_N;
-constexpr int NUM_PARAMS = OUT0 + OUT_N;
+constexpr int SEQ0 = OUT0 + OUT_N;
+constexpr int NUM_PARAMS = SEQ0 + SQ_N;
+// Sequencer-Raster (Schlaege pro Puls)
+constexpr int kSeqRates = 7;
+constexpr float kSeqBeats[kSeqRates] = { 1.0f, 0.5f, 1.0f / 3.0f, 0.25f, 1.0f / 6.0f, 0.125f, 1.0f / 12.0f };
 
 constexpr int oscP (int i, int f) { return OSC0 + i * O_N + f; }
 constexpr int envP (int i, int f) { return ENV0 + i * E_N + f; }
@@ -126,10 +132,12 @@ inline std::vector<PDef> makeDefs()
         B (s + "reset", n + "Note-On Reset", false);
     }
     // Mixer
-    const char* ch[5] = { "OSC 1", "OSC 2", "OSC 3", "RING MOD", "NOISE" };
-    for (int i = 0; i < 5; ++i) F ("mix_lvl" + std::to_string (i), std::string ("Mixer ") + ch[i], 0, 1, i == 0 ? 0.8f : 0.0f, dTen);
-    for (int i = 0; i < 5; ++i) B ("mix_svf" + std::to_string (i), std::string ("Mixer ") + ch[i] + " > SVF", false);
-    for (int i = 0; i < 5; ++i) B ("mix_lad" + std::to_string (i), std::string ("Mixer ") + ch[i] + " > Ladder", true);
+    const char* ch[6] = { "OSC 1", "OSC 2", "OSC 3", "RING MOD", "NOISE", "SUB" };
+    for (int i = 0; i < 6; ++i) F ("mix_lvl" + std::to_string (i), std::string ("Mixer ") + ch[i], 0, 1, i == 0 ? 0.8f : 0.0f, dTen);
+    for (int i = 0; i < 6; ++i) B ("mix_svf" + std::to_string (i), std::string ("Mixer ") + ch[i] + " > SVF", false);
+    for (int i = 0; i < 6; ++i) B ("mix_lad" + std::to_string (i), std::string ("Mixer ") + ch[i] + " > Ladder", true);
+    C ("sub_oct", "Sub Octave", { "-1", "-2" }, 1);
+    C ("sub_wave", "Sub Wave", { "SINE", "SQUARE" }, 0);
     // Gemeinsame Oszillator-Modulation
     F ("c_lfo1", "LFO 1 > Pitch", 0, 1, 0, dTen);
     F ("c_mepitch", "Mod EG > Pitch", -1, 1, 0, dTen);
@@ -236,6 +244,18 @@ inline std::vector<PDef> makeDefs()
     }
     F ("out_vol", "Master Volume", 0, 1, 0.7f, dTen);
     F ("out_tempo", "Tempo (ohne Host)", 40, 240, 120, dBpm);
+    // Step-Sequencer (8 Stufen, Metropolis-Prinzip: Pitch, Pulse Count, Gate Type)
+    B ("seq_on", "Seq On", false);
+    B ("seq_latch", "Seq Latch", false);
+    C ("seq_rate", "Seq Rate", { "1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32", "1/32T" }, 3);
+    F ("seq_len", "Seq Length", 1, 16, 16, dInt);
+    F ("seq_gate", "Seq Gate Length", 0.05f, 1, 0.5f, dPct);
+    C ("seq_order", "Seq Order", { "FWD", "REV", "PING", "RANDOM" }, 0);
+    const int defP[16] = { 0, 12, 7, 0, 3, 0, 10, 7, 0, 12, 7, 0, 5, 0, 3, 7 };
+    for (int i = 0; i < kSeqSteps; ++i) F ("seq_p" + std::to_string (i + 1), "Seq Pitch " + std::to_string (i + 1), -24, 24, (float) defP[i], dStep);
+    for (int i = 0; i < kSeqSteps; ++i) F ("seq_c" + std::to_string (i + 1), "Seq Pulses " + std::to_string (i + 1), 1, 8, 1, dInt);
+    for (int i = 0; i < kSeqSteps; ++i) C ("seq_g" + std::to_string (i + 1), "Seq Gate " + std::to_string (i + 1), { "REST", "SINGLE", "MULTI", "HOLD" }, 1);
+    for (int i = 0; i < kSeqSteps; ++i) C ("seq_m" + std::to_string (i + 1), "Seq Step " + std::to_string (i + 1), { "ON", "MUTE", "SKIP" }, 0);
     return d;
 }
 } // namespace TO

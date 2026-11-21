@@ -51,6 +51,7 @@ struct Voice
     float note = 60, target = 60, vel = 1, detuneCents = 0, pan = 0;
     uint32_t age = 0;
     Osc osc[3];
+    double subPh = 0.0;
     float out[3] = { 0, 0, 0 };   // letzter Ausgang je VCO (fuer FM)
     Env env[3];                   // 0 Filter, 1 Amp, 2 Mod
     Env nenv;                     // Noise
@@ -73,6 +74,7 @@ public:
     void noteOn (int note, float velocity);
     void noteOff (int note);
     void allNotesOff();
+    void panic();   // sofort alles stumm, Pedal/Stack zuruecksetzen
     void setPedal (bool down);
     void setBend (float v) { bend = v; }       // -1..1
     void setModWheel (float v) { modWheel = v; }

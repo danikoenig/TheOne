@@ -20,6 +20,7 @@ static String fmtValue (const TO::PDef& d, float v)
         case dSemi:   snprintf (b, sizeof (b), "%+.2f st", v); return b;
         case dBeatHz: snprintf (b, sizeof (b), "%+.2f Hz", v); return b;
         case dInt:    snprintf (b, sizeof (b), "%d", (int) std::lround (v)); return b;
+        case dStep:   snprintf (b, sizeof (b), "%+d st", (int) std::lround (v)); return b;
         case dBpm:    snprintf (b, sizeof (b), "%.0f BPM", v); return b;
         case dLfoRate: snprintf (b, sizeof (b), "%.1f", v * 10.0f); return b;
         default:      snprintf (b, sizeof (b), "%.2f", v); return b;
@@ -42,7 +43,7 @@ AudioProcessorValueTreeState::ParameterLayout TheOneProcessor::createLayout (con
         else
         {
             const TO::PDef dd = d;
-            const float step = d.disp == TO::dInt ? 1.0f : 0.0f;
+            const float step = (d.disp == TO::dInt || d.disp == TO::dStep) ? 1.0f : 0.0f;
             auto attr = AudioParameterFloatAttributes().withStringFromValueFunction ([dd] (float v, int) { return fmtValue (dd, v); });
             layout.add (std::make_unique<AudioParameterFloat> (pid, d.name, NormalisableRange<float> (d.mn, d.mx, step), d.def, attr));
         }
@@ -113,6 +114,222 @@ void TheOneProcessor::setChordFromString (const String& s)
     applyChord (v);
 }
 
+//==============================================================================
+// Start-Programme (eigene Ausgangspunkte, keine Presets des Originals)
+namespace
+{
+    using PV = std::pair<const char*, float>;
+    struct Prog { const char* name; std::vector<PV> v; };
+    const std::vector<Prog>& programs()
+    {
+        static const std::vector<Prog> p = {
+            { "01 - Init - Saw", {} },
+            { "02 - Pad - Warm Unison", {
+                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc3_oct", 3 },
+                { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc3_wave", 0 },
+                { "osc2_beat", 0.35f }, { "osc3_beat", -0.3f }, { "osc3_angle", 0.0f },
+                { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.5f }, { "mix_lvl2", 0.35f },
+                { "lad_cut", 0.5f }, { "lad_res", 0.15f }, { "lad_eg", 0.3f }, { "lad_key", 0.5f },
+                { "aeg_att", 0.72f }, { "aeg_dec", 0.7f }, { "aeg_sus", 0.85f }, { "aeg_rel", 0.8f },
+                { "feg_att", 0.72f }, { "feg_dec", 0.8f }, { "feg_sus", 0.45f }, { "feg_rel", 0.8f },
+                { "v_poly", 16 }, { "v_unison", 1 }, { "v_ucount", 3 }, { "v_detune", 0.3f }, { "v_spread", 0.8f },
+                { "fx1_type", 9 }, { "fx1_mix", 0.5f }, { "fx2_type", 2 }, { "fx2_mix", 0.25f } } },
+            { "03 - Lead - Mono Glide", {
+                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
+                { "osc2_beat", 0.2f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.5f },
+                { "lad_cut", 0.62f }, { "lad_res", 0.3f }, { "lad_eg", 0.4f },
+                { "aeg_att", 0.2f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.7f }, { "aeg_rel", 0.5f },
+                { "feg_dec", 0.55f }, { "feg_sus", 0.3f },
+                { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.2f }, { "c_moddepth", 1.5f },
+                { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } } },
+            { "04 - Bass - Sub", {
+                { "osc1_oct", 1 }, { "osc2_oct", 1 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
+                { "osc2_beat", 0.1f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.4f }, { "mix_lvl5", 0.7f },
+                { "sub_oct", 0 }, { "sub_wave", 0 },
+                { "lad_cut", 0.36f }, { "lad_res", 0.25f }, { "lad_eg", 0.5f },
+                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.35f },
+                { "feg_dec", 0.45f }, { "feg_sus", 0.1f },
+                { "v_mono", 1 }, { "v_glideon", 0 }, { "v_multi", 1 } } },
+            { "05 - Pluck - Poly", {
+                { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_mix", 0.6f }, { "osc2_pw", 0.3f }, { "osc2_beat", 0.25f },
+                { "mix_lvl0", 0.6f }, { "mix_lvl1", 0.45f },
+                { "lad_cut", 0.34f }, { "lad_res", 0.2f }, { "lad_eg", 0.6f },
+                { "feg_att", 0.0f }, { "feg_dec", 0.5f }, { "feg_sus", 0.0f }, { "feg_rel", 0.5f },
+                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.0f }, { "aeg_rel", 0.5f },
+                { "fx1_type", 3 }, { "fx1_mix", 0.22f }, { "fx2_type", 7 }, { "fx2_mix", 0.25f } } }
+        };
+        return p;
+    }
+}
+
+int TheOneProcessor::getNumPrograms() { return (int) programs().size(); }
+const String TheOneProcessor::getProgramName (int i) { return String (programs()[(size_t) jlimit (0, getNumPrograms() - 1, i)].name); }
+
+void TheOneProcessor::setCurrentProgram (int idx)
+{
+    idx = jlimit (0, getNumPrograms() - 1, idx);
+    currentProgram = idx;
+    for (auto* prm : getParameters())
+        if (auto* rp = dynamic_cast<RangedAudioParameter*> (prm))
+        {
+            const String id = rp->paramID;
+            if (id.startsWith ("out_") || id == "v_hold" || id == "v_chord" || id == "v_learn" || id == "v_silent") continue;
+            rp->setValueNotifyingHost (rp->getDefaultValue());
+        }
+    for (auto& kv : programs()[(size_t) idx].v)
+        if (auto* rp = apvts.getParameter (kv.first))
+            rp->setValueNotifyingHost (rp->convertTo0to1 (kv.second));
+}
+
+void TheOneProcessor::panic()
+{
+    if (auto* h = apvts.getParameter ("v_hold")) h->setValueNotifyingHost (0.0f);
+    keyboardState.allNotesOff (0);
+    panicFlag.store (true);
+}
+
+//==============================================================================
+// Step-Sequencer: gehaltene Taste transponiert die Sequenz (Grundton C3 = 60)
+void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm, bool learn)
+{
+    using namespace TO;
+    const bool on = P[SEQ0 + SQ_ON] > 0.5f && ! learn;
+    if (! on)
+    {
+        if (seqSounding >= 0) { midi.addEvent (MidiMessage::noteOff (1, seqSounding), 0); seqSounding = -1; }
+        seqKeys.clear(); seqRunning = false; seqStage.store (-1);
+        return;
+    }
+    const bool latch = P[SEQ0 + SQ_LATCH] > 0.5f;
+    const int len = jlimit (1, kSeqSteps, (int) std::lround (P[SEQ0 + SQ_LEN]));
+    const int order = (int) std::lround (P[SEQ0 + SQ_ORDER]);
+    auto modeOf = [&] (int s) { return (int) std::lround (P[SEQ0 + SQ_MODE0 + s]); };
+    auto nextStage = [&] (int s) -> int
+    {
+        int cand[kSeqSteps], nc = 0;
+        for (int i = 0; i < len; ++i) if (modeOf (i) != 2) cand[nc++] = i;
+        if (nc == 0) return jlimit (0, len - 1, s);
+        if (nc == 1) return cand[0];
+        if (order == 3)
+        {
+            int r = cand[seqRng.nextInt (nc)];
+            for (int t = 0; t < 4 && r == s; ++t) r = cand[seqRng.nextInt (nc)];
+            return r;
+        }
+        if (order == 2)
+        {
+            int i = s;
+            for (int t = 0; t < 2 * len + 2; ++t)
+            {
+                int j = i + seqDir;
+                if (j >= len || j < 0) { seqDir = -seqDir; j = i + seqDir; }
+                i = jlimit (0, len - 1, j);
+                if (modeOf (i) != 2) return i;
+            }
+            return cand[0];
+        }
+        const int d = order == 1 ? -1 : 1;
+        for (int k = 1; k <= len; ++k) { const int i = ((s + d * k) % len + len) % len; if (modeOf (i) != 2) return i; }
+        return cand[0];
+    };
+    auto firstStage = [&]() -> int
+    {
+        seqDir = 1;
+        if (order == 1) return nextStage (0);          // rueckwaerts: letzte aktive Stufe
+        if (order == 3) return nextStage (-1);
+        for (int i = 0; i < len; ++i) if (modeOf (i) != 2) return i;   // vorwaerts / Ping: erste aktive Stufe
+        return 0;
+    };
+    const double pulse = jmax (16.0, 60.0 / jmax (20.0, bpm) * (double) kSeqBeats[jlimit (0, kSeqRates - 1, (int) std::lround (P[SEQ0 + SQ_RATE]))] * sampleRate);
+    const double gateLen = jmax (8.0, pulse * (double) P[SEQ0 + SQ_GATE]);
+
+    MidiBuffer out;
+    auto noteOffAt = [&] (int pos) { if (seqSounding >= 0) { out.addEvent (MidiMessage::noteOff (1, seqSounding), pos); seqSounding = -1; } };
+    auto stageType = [&] (int s) { return (int) std::lround (P[SEQ0 + SQ_TYPE0 + s]); };
+    auto stagePulses = [&] (int s) { return jlimit (1, 8, (int) std::lround (P[SEQ0 + SQ_PULSE0 + s])); };
+
+    // Pulsbeginn: Noten der aktuellen Stufe ausloesen
+    auto firePulse = [&] (int pos)
+    {
+        const int t = modeOf (seqStageIdx) != 0 ? 0 : stageType (seqStageIdx);   // MUTE/SKIP = stumm
+        const int note = jlimit (0, 127, seqRoot + (int) std::lround (P[SEQ0 + SQ_PITCH0 + seqStageIdx]));
+        const bool first = seqPulseIdx == 0;
+        if (t == 0) { noteOffAt (pos); return; }                       // REST
+        if (t == 3) { if (first) { noteOffAt (pos); out.addEvent (MidiMessage::noteOn (1, note, seqVel), pos); seqSounding = note; } seqOffIn = -1.0; return; } // HOLD
+        if (t == 1 && ! first) return;                                   // SINGLE nur erster Puls
+        noteOffAt (pos);
+        out.addEvent (MidiMessage::noteOn (1, note, seqVel), pos);
+        seqSounding = note;
+        seqOffIn = gateLen;
+    };
+    double cur = 0.0;
+    auto advanceTo = [&] (int end)
+    {
+        const double e = (double) end;
+        while (seqRunning)
+        {
+            const double nextPulse = cur + seqToPulse;
+            const double nextOff = seqOffIn >= 0.0 ? cur + seqOffIn : 1e18;
+            const double next = jmin (nextPulse, nextOff);
+            if (next >= e) break;
+            const double el = next - cur;
+            seqToPulse -= el; if (seqOffIn >= 0.0) seqOffIn -= el;
+            cur = next;
+            const int at = jlimit (0, numSamples - 1, (int) cur);
+            if (seqOffIn >= 0.0 && seqOffIn <= 1e-9) { noteOffAt (at); seqOffIn = -1.0; }
+            if (seqToPulse <= 1e-9)
+            {
+                seqToPulse += pulse;
+                if (++seqPulseIdx >= stagePulses (seqStageIdx))
+                {
+                    seqPulseIdx = 0;
+                    if (stageType (seqStageIdx) == 3) noteOffAt (at);
+                    seqStageIdx = nextStage (seqStageIdx);
+                }
+                firePulse (at);
+            }
+        }
+        if (seqRunning && e > cur)
+        {
+            const double el = e - cur;
+            seqToPulse -= el; if (seqOffIn >= 0.0) seqOffIn -= el;
+        }
+        cur = jmax (cur, e);
+    };
+
+    if (seqStageIdx >= len) seqStageIdx = nextStage (seqStageIdx % len);
+    for (const auto meta : midi)
+    {
+        const auto m = meta.getMessage();
+        const int pos = jlimit (0, numSamples - 1, meta.samplePosition);
+        if (! m.isNoteOnOrOff()) { advanceTo (pos); out.addEvent (m, pos); continue; }
+        advanceTo (pos);
+        const int n = m.getNoteNumber();
+        if (m.isNoteOn())
+        {
+            seqKeys.removeAllInstancesOf (n);
+            seqKeys.add (n);
+            seqVel = m.getFloatVelocity();
+            const bool wasRunning = seqRunning;
+            seqRoot = n;   // Taste = Grundton der Sequenz
+            if (! wasRunning)
+            {
+                seqRunning = true; seqStageIdx = firstStage(); seqPulseIdx = 0; seqToPulse = pulse; seqOffIn = -1.0;
+                firePulse (pos);
+            }
+        }
+        else
+        {
+            seqKeys.removeAllInstancesOf (n);
+            if (! seqKeys.isEmpty()) seqRoot = seqKeys.getLast();
+            else if (! latch) { noteOffAt (pos); seqRunning = false; }
+        }
+    }
+    advanceTo (numSamples);
+    seqStage.store (seqRunning ? seqStageIdx : -1);
+    midi.swapWith (out);
+}
+
 void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi)
 {
     ScopedNoDenormals noDenormals;
@@ -121,6 +338,7 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
 
     for (size_t i = 0; i < raw.size(); ++i) P[i] = raw[i]->load();
     synth.setParams (P.data());
+    if (panicFlag.exchange (false)) { seqRunning = false; seqKeys.clear(); seqSounding = -1; seqStage.store (-1); synth.panic(); down.fill (false); fx.prepare (getSampleRate() > 0 ? getSampleRate() : 48000.0); }
     {
         const SpinLock::ScopedTryLockType sl (chordLock);
         if (sl.isLocked() && chordPending) { synth.setChord (pendingChord); chordPending = false; }
@@ -153,6 +371,7 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     learnActive.store (learn);
 
     keyboardState.processNextMidiBuffer (midi, 0, numSamples, true);
+    runSequencer (midi, numSamples, bpm, learn);
 
     float* L = scratch.getWritePointer (0);
     float* R = scratch.getWritePointer (1);

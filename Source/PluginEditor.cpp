@@ -17,10 +17,10 @@ public:
     void paint (Graphics& g) override
     {
         auto r = getLocalBounds().toFloat();
-        g.setColour (Colour (0xff0a0a0b));
+        g.setColour (Colour (0xff121317));
         g.fillRoundedRectangle (r, 6.0f);
         auto s = r.reduced (6.0f);
-        g.setGradientFill (ColourGradient (Colour (0xff0b0b0d), 0, s.getY(), Colour (0xff020203), 0, s.getBottom(), false));
+        g.setGradientFill (ColourGradient (Colour (0xff121317), 0, s.getY(), Colour (0xff0d0e11), 0, s.getBottom(), false));
         g.fillRoundedRectangle (s, 3.0f);
         g.setColour (Col::lcdLine);
         g.drawRoundedRectangle (s, 3.0f, 1.0f);
@@ -56,7 +56,7 @@ public:
 
         // Oszilloskop
         auto sc = Rectangle<float> (a.getX(), a.getY() + 150.0f, a.getWidth(), 100.0f);
-        g.setColour (Colour (0xff060607));
+        g.setColour (Colour (0xff0d0e11));
         g.fillRect (sc);
         g.setColour (Col::lcdLine);
         g.drawRect (sc, 1.0f);
@@ -82,7 +82,7 @@ public:
             }
             g.setColour (Col::led.withAlpha (0.25f));
             g.strokePath (p, PathStrokeType (3.0f));
-            g.setColour (Colour (0xffffd9d9));
+            g.setColour (Colour (0xffffe2cc));
             g.strokePath (p, PathStrokeType (1.2f));
         }
 
@@ -117,6 +117,162 @@ private:
 };
 
 //==============================================================================
+// Startfenster (wie "Getting Started" bei Falcon), abschaltbar
+static std::unique_ptr<PropertiesFile> openSettings()
+{
+    PropertiesFile::Options o;
+    o.applicationName = "The One";
+    o.folderName = "Dani Koenig";
+    o.filenameSuffix = ".settings";
+    o.osxLibrarySubFolder = "Application Support";
+    return std::make_unique<PropertiesFile> (o);
+}
+
+class StartScreen : public Component
+{
+public:
+    std::function<void (int)> onPick;
+    std::function<void()> onClose;
+
+    StartScreen (TheOneProcessor& p) : proc (p), showToggle ("SHOW AT STARTUP")
+    {
+        for (int i = 0; i < proc.getNumPrograms(); ++i)
+        {
+            auto* b = new TextButton (proc.getProgramName (i));
+            rows.add (b); addAndMakeVisible (b);
+            b->setColour (TextButton::buttonColourId, Colour (0xff26282e));
+            b->setColour (TextButton::buttonOnColourId, Colour (0xff3a3e47));
+            b->onClick = [this, i] { if (onPick) onPick (i); };
+        }
+        addAndMakeVisible (showToggle);
+        auto s = openSettings();
+        showToggle.setState (s->getBoolValue ("showAtStartup", true));
+        showToggle.onChange = [] (bool b) { auto st = openSettings(); st->setValue ("showAtStartup", b); st->saveIfNeeded(); };
+        addAndMakeVisible (closeBtn);
+        closeBtn.setButtonText ("CLOSE");
+        closeBtn.onClick = [this] { if (onClose) onClose(); };
+    }
+    static bool shouldShow() { return openSettings()->getBoolValue ("showAtStartup", true); }
+
+    Rectangle<int> card() const { const int h = 150 + rows.size() * 50; return Rectangle<int> (0, 0, 620, h).withCentre (getLocalBounds().getCentre().translated (0, -40)); }
+    void resized() override
+    {
+        auto c = card();
+        for (int i = 0; i < rows.size(); ++i) rows[i]->setBounds (c.getX() + 30, c.getY() + 80 + i * 50, c.getWidth() - 60, 44);
+        showToggle.setBounds (c.getX() + 30, c.getBottom() - 50, 200, 20);
+        closeBtn.setBounds (c.getRight() - 140, c.getBottom() - 56, 110, 30);
+    }
+    void paint (Graphics& g) override
+    {
+        g.fillAll (Colours::black.withAlpha (0.62f));
+        auto c = card().toFloat();
+        g.setColour (Colour (0xff1d1f24)); g.fillRoundedRectangle (c, 10.0f);
+        g.setColour (Colour (0xff2b2e35)); g.drawRoundedRectangle (c, 10.0f, 1.5f);
+        g.setColour (Col::text);
+        g.setFont (F (26.0f));
+        g.drawText ("Getting Started", c.withHeight (60.0f).withTrimmedLeft (30.0f).translated (0, 12).toNearestInt(), Justification::centredLeft, false);
+        g.setColour (Col::textDim);
+        g.setFont (F (12.0f, false));
+        g.drawText ("Pick a starting point. Everything stays editable.", c.withHeight (20.0f).withTrimmedLeft (30.0f).translated (0, 54).toNearestInt(), Justification::centredLeft, false);
+    }
+    void mouseDown (const MouseEvent& e) override { if (! card().contains (e.getPosition()) && onClose) onClose(); }
+
+private:
+    TheOneProcessor& proc;
+    OwnedArray<TextButton> rows;
+    LedToggle showToggle;
+    TextButton closeBtn;
+};
+
+//==============================================================================
+// Vertikaler Fader (Sequencer), Wert erscheint im LCD
+class FaderCtl : public Component
+{
+public:
+    FaderCtl (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s, bool notched) : show (s), notch (notched)
+    {
+        param = apvts.getParameter (id);
+        att = std::make_unique<ParameterAttachment> (*param, [this] (float) { repaint(); });
+        att->sendInitialUpdate();
+    }
+    void paint (Graphics& g) override
+    {
+        auto r = getLocalBounds().toFloat();
+        auto track = Rectangle<float> (r.getCentreX() - 3.0f, r.getY() + 6.0f, 6.0f, r.getHeight() - 12.0f);
+        g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (track, 3.0f);
+        g.setColour (Colour (0xff2b2e35)); g.drawRoundedRectangle (track, 3.0f, 1.0f);
+        if (notch)
+        {
+            const int steps = (int) std::lround (param->getNormalisableRange().end - param->getNormalisableRange().start);
+            g.setColour (Col::textDim.withAlpha (0.5f));
+            for (int i = 0; i <= steps; ++i) { const float y = track.getBottom() - track.getHeight() * (float) i / (float) steps; g.fillRect (track.getRight() + 2.0f, y - 0.5f, 3.0f, 1.0f); }
+        }
+        else
+        {
+            g.setColour (Col::textDim.withAlpha (0.6f));
+            g.fillRect (track.getRight() + 2.0f, track.getCentreY() - 0.5f, 6.0f, 1.0f);
+        }
+        const float v = param->getValue();
+        const float y = track.getBottom() - v * track.getHeight();
+        const float cw = jmin (20.0f, r.getWidth() - 4.0f);
+        auto cap = Rectangle<float> (r.getCentreX() - cw * 0.5f, y - 5.0f, cw, 10.0f);
+        g.setGradientFill (ColourGradient (Colour (0xff3a3e47), 0, cap.getY(), Colour (0xff1d1f24), 0, cap.getBottom(), false));
+        g.fillRoundedRectangle (cap, 2.5f);
+        g.setColour (Colour (0xffff9a4d));
+        g.fillRect (cap.getX() + 3.0f, cap.getCentreY() - 1.0f, cap.getWidth() - 6.0f, 2.0f);
+    }
+    void mouseDown (const MouseEvent& e) override { att->beginGesture(); setFrom (e); }
+    void mouseDrag (const MouseEvent& e) override { setFrom (e); }
+    void mouseUp (const MouseEvent&) override { att->endGesture(); }
+    void mouseDoubleClick (const MouseEvent&) override { att->setValueAsCompleteGesture (param->convertFrom0to1 (param->getDefaultValue())); announce(); }
+private:
+    void setFrom (const MouseEvent& e)
+    {
+        const float t = jlimit (0.0f, 1.0f, 1.0f - (e.position.y - 6.0f) / ((float) getHeight() - 12.0f));
+        att->setValueAsPartOfGesture (param->convertFrom0to1 (t));
+        announce();
+    }
+    void announce() { if (show) show (param->getName (64), param->getCurrentValueAsText()); }
+    ShowFn show;
+    bool notch;
+    RangedAudioParameter* param = nullptr;
+    std::unique_ptr<ParameterAttachment> att;
+};
+
+//==============================================================================
+// Step-Taste: Klick schaltet ON -> MUTE -> SKIP
+class StepModeBtn : public Component
+{
+public:
+    StepModeBtn (AudioProcessorValueTreeState& apvts, const String& id, ShowFn s) : show (s)
+    {
+        param = apvts.getParameter (id);
+        att = std::make_unique<ParameterAttachment> (*param, [this] (float v) { mode = (int) std::lround (v); repaint(); });
+        att->sendInitialUpdate();
+    }
+    void paint (Graphics& g) override
+    {
+        auto r = getLocalBounds().toFloat().reduced (1.5f);
+        const Colour acc (0xffff9a4d);
+        if (mode == 0) { g.setColour (acc); g.fillRoundedRectangle (r, 3.0f); }
+        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
+        g.setColour (mode == 0 ? Colour (0xff17181c) : (mode == 1 ? acc : Col::textDim));
+        g.setFont (F (7.5f));
+        g.drawText (mode == 0 ? "ON" : (mode == 1 ? "MUTE" : "SKIP"), getLocalBounds(), Justification::centred, false);
+    }
+    void mouseDown (const MouseEvent&) override
+    {
+        att->setValueAsCompleteGesture ((float) ((mode + 1) % 3));
+        if (show) show (param->getName (64), param->getCurrentValueAsText());
+    }
+private:
+    ShowFn show;
+    int mode = 0;
+    RangedAudioParameter* param = nullptr;
+    std::unique_ptr<ParameterAttachment> att;
+};
+
+//==============================================================================
 struct Mod { String title; Rectangle<int> r; };
 struct Cap { String text; int x, y; float size; bool center; };
 
@@ -146,7 +302,14 @@ public:
         keys.setBounds (190, 752, 1960, 122);
         keys.setWantsKeyboardFocus (false);
         startTimerHz (30);
+        start = std::make_unique<StartScreen> (proc);
+        addChildComponent (*start);
+        start->setBounds (0, 0, kW0, kH0);
+        start->onPick = [this] (int i) { proc.setCurrentProgram (i); if (progBox) progBox->setSelectedId (i + 1, dontSendNotification); showStart (false); };
+        start->onClose = [this] { showStart (false); };
+        if (StartScreen::shouldShow()) showStart (true);
     }
+    void showStart (bool on) { start->setVisible (on); if (on) start->toFront (false); }
     ~Content() override { setLookAndFeel (nullptr); }
 
     //------------------------------------------------------------------ Hilfen
@@ -200,7 +363,7 @@ public:
             K (s + "fade", "FADE", 100, 88, 40);
             T (s + "sync", "SYNC", 4, 146, 58, 15);
             T (s + "pol", "BIPOLAR", 62, 146, 60, 15);
-            T (s + "reset", "RESET", 122, 146, 60, 15);
+            T (s + "reset", "RST", 122, 146, 60, 15);
         }
         // Oszillatoren
         for (int i = 0; i < 3; ++i)
@@ -324,23 +487,28 @@ public:
     void buildRight()
     {
         // Mixer
-        M ("MIXER", 1260, 14, 300, 128);
-        const char* nm[5] = { "OSC 1", "OSC 2", "OSC 3", "RING", "NOISE" };
-        for (int i = 0; i < 5; ++i)
+        M ("MIXER", 1260, 14, 300, 150);
+        const char* nm[6] = { "OSC 1", "OSC 2", "OSC 3", "RING", "NOISE", "SUB" };
+        for (int i = 0; i < 6; ++i)
         {
-            K ("mix_lvl" + String (i), nm[i], 8 + i * 58, 22, 46);
-            T ("mix_svf" + String (i), "SVF", 6 + i * 58, 88, 52, 14);
-            T ("mix_lad" + String (i), "LAD", 6 + i * 58, 106, 52, 14);
+            K ("mix_lvl" + String (i), nm[i], 8 + i * 49, 18, 36);
+            T ("mix_svf" + String (i), "S", 5 + i * 49, 66, 44, 14);
+            T ("mix_lad" + String (i), "L", 5 + i * 49, 84, 44, 14);
         }
+        Ctext ("S = SVF   L = LADDER", 150, 104);
+        Ctext ("SUB OCTAVE", 8, 104);
+        S ("sub_oct", 8, 116, 80, 24, false);
+        Ctext ("SUB WAVE", 100, 104);
+        S ("sub_wave", 100, 116, 110, 24, false);
         // Zusatz-Modulation
-        M ("EXTRA MODULATION", 1260, 150, 300, 114);
-        Ctext ("LFO 4 DESTINATION", 10, 22);
-        Cb ("x_l4dest", 10, 34, 130);
-        K ("x_l4amt", "AMOUNT", 150, 22, 40);
-        Ctext ("MOD EG DESTINATION", 10, 66);
-        Cb ("x_medest", 10, 78, 130);
-        K ("x_meamt", "AMOUNT", 150, 64, 40);
-        K ("c_moddepth", "WHEEL", 230, 22, 40);
+        M ("EXTRA MODULATION", 1260, 170, 300, 94);
+        Ctext ("LFO 4 DESTINATION", 10, 18);
+        Cb ("x_l4dest", 10, 30, 130, 18);
+        K ("x_l4amt", "AMT", 152, 12, 30);
+        Ctext ("MOD EG DESTINATION", 10, 54);
+        Cb ("x_medest", 10, 66, 130, 18);
+        K ("x_meamt", "AMT", 152, 50, 30);
+        K ("c_moddepth", "WHEEL", 230, 30, 40);
 
         // SVF
         M ("STATE VARIABLE FILTER", 1570, 14, 190, 250);
@@ -368,7 +536,7 @@ public:
         // Filter gemeinsam
         M ("FILTER COMMON", 1970, 14, 180, 250);
         fEg = new KnobCtl ("EG AMT", 46, show, NormalisableRange<double> (-1.0, 1.0), 0.0, "Filter EG Amount");
-        fLfo = new KnobCtl ("LFO 2 AMT", 46, show, NormalisableRange<double> (0.0, 1.0), 0.0, "Filter LFO 2 Amount");
+        fLfo = new KnobCtl ("LFO 2", 46, show, NormalisableRange<double> (0.0, 1.0), 0.0, "Filter LFO 2 Amount");
         fFm = new KnobCtl ("FM AMT", 46, show, NormalisableRange<double> (0.0, 1.0), 0.0, "Filter FM Amount");
         KnobCtl* fk[3] = { fEg, fLfo, fFm };
         for (int i = 0; i < 3; ++i)
@@ -392,32 +560,73 @@ public:
         svfCut->slider.onValueChange = [this] { linkMoved (0); };
         ladCut->slider.onValueChange = [this] { linkMoved (1); };
 
-        // Huellkurven
+        // Huellkurven: Attack - Decay - Sustain - Release als Hauptreihe, Delay/Hold als Zusatz
         const char* en[3] = { "FILTER ENVELOPE", "AMPLIFIER ENVELOPE", "MODULATION ENVELOPE" };
         for (int i = 0; i < 3; ++i)
         {
             const String s = i == 0 ? "feg_" : (i == 1 ? "aeg_" : "meg_");
             M (en[i], 1260 + i * 300, 274, 290, 200);
-            K (s + "delay", "DELAY", 8, 24, 46);
-            K (s + "att", "ATTACK", 62, 24, 46);
-            K (s + "hold", "HOLD", 116, 24, 46);
-            K (s + "dec", "DECAY", 8, 96, 46);
-            K (s + "sus", "SUSTAIN", 62, 96, 46);
-            K (s + "rel", "RELEASE", 116, 96, 46);
-            K (s + "acurve", "A CURVE", 184, 24, 38);
-            K (s + "dcurve", "D CURVE", 236, 24, 38);
-            K (s + "rcurve", "R CURVE", 184, 82, 38);
-            K (s + "scale", "TIME x", 236, 82, 38);
-            K (s + "vel", "VELOCITY", 184, 140, 38);
-            T (s + "loop", "LOOP", 8, 170, 60, 15);
-            T (s + "latch", "LATCH", 76, 170, 66, 15);
+            K (s + "att", "ATTACK", 12, 22, 46);
+            K (s + "dec", "DECAY", 80, 22, 46);
+            K (s + "sus", "SUSTAIN", 148, 22, 46);
+            K (s + "rel", "RELEASE", 216, 22, 46);
+            Ctext ("EXTRA STAGES", 12, 80);
+            K (s + "delay", "DELAY", 12, 92, 38);
+            K (s + "hold", "HOLD", 66, 92, 38);
+            K (s + "vel", "VEL", 120, 92, 38);
+            K (s + "scale", "TIME x", 174, 92, 38);
+            Ctext ("CURVES  (A / D / R)", 12, 140);
+            K (s + "acurve", "A", 12, 152, 28);
+            K (s + "dcurve", "D", 60, 152, 28);
+            K (s + "rcurve", "R", 108, 152, 28);
+            T (s + "loop", "LOOP", 190, 146, 66, 15);
+            T (s + "latch", "LATCH", 190, 168, 70, 15);
         }
-        // Ausgang und Typenschild
+        // Ausgang, Programme, Panic
         M ("OUTPUT", 1260, 484, 300, 250);
         K ("out_vol", "MASTER VOLUME", 20, 36, 84, true);
         K ("out_tempo", "TEMPO", 140, 46, 60);
-        Ctext ("Mit Host-Tempo laeuft Sync automatisch.", 14, 190);
-        Ctext ("Ohne Host (Standalone) gilt dieser Wert.", 14, 202);
+        Ctext ("START PROGRAM", 14, 142);
+        progBox = new ComboBox();
+        owned.add (progBox); addAndMakeVisible (progBox);
+        for (int i = 0; i < proc.getNumPrograms(); ++i) progBox->addItem (proc.getProgramName (i), i + 1);
+        progBox->setSelectedId (proc.getCurrentProgram() + 1, dontSendNotification);
+        progBox->setBounds (ox + 14, oy + 156, 150, 22);
+        progBox->onChange = [this] { proc.setCurrentProgram (progBox->getSelectedId() - 1); };
+        auto* pan = new TextButton ("PANIC");
+        owned.add (pan); addAndMakeVisible (pan);
+        pan->setColour (TextButton::textColourOffId, Colour (0xffff1f3f));
+        pan->setBounds (ox + 184, oy + 154, 100, 26);
+        pan->onClick = [this] { proc.panic(); };
+        auto* st = new TextButton ("START SCREEN");
+        owned.add (st); addAndMakeVisible (st);
+        st->setBounds (ox + 184, oy + 124, 100, 24);
+        st->onClick = [this] { showStart (true); };
+        Ctext ("Programme sind nur Startpunkte, alles bleibt editierbar.", 14, 196);
+        Ctext ("Panic: alle Noten stumm, Hold aus.", 14, 208);
+        Ctext ("Mit Host-Tempo laeuft Sync automatisch.", 14, 220);
+        Ctext ("Ohne Host (Standalone) gilt der Tempo-Wert.", 14, 232);
+
+        // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
+        M ("STEP SEQUENCER", 1580, 484, 570, 250);
+        T ("seq_on", "SEQ ON", 8, 20, 84, 16);
+        T ("seq_latch", "LATCH", 8, 38, 84, 16);
+        Ctext ("RATE", 8, 58, 8.5f);
+        Cb ("seq_rate", 8, 69, 86, 18);
+        Ctext ("ORDER", 8, 90, 8.5f);
+        Cb ("seq_order", 8, 101, 86, 18);
+        K ("seq_len", "STEPS", 4, 122, 30);
+        K ("seq_gate", "GATE", 50, 122, 30);
+        for (int i = 0; i < kSeqSteps; ++i)
+        {
+            const int x = 100 + i * 29;
+            const String n (i + 1);
+            stageX[i] = ox + x;
+            auto* fp = new FaderCtl (apvts, "seq_p" + n, show, false); owned.add (fp); addAndMakeVisible (fp); fp->setBounds (ox + x + 1, oy + 34, 26, 84);
+            auto* fc = new FaderCtl (apvts, "seq_c" + n, show, true);  owned.add (fc); addAndMakeVisible (fc); fc->setBounds (ox + x + 1, oy + 122, 26, 52);
+            S ("seq_g" + n, x + 8, 177, 18, 42, true, { "", "", "", "" });
+            auto* sm = new StepModeBtn (apvts, "seq_m" + n, show); owned.add (sm); addAndMakeVisible (sm); sm->setBounds (ox + x + 1, oy + 224, 27, 18);
+        }
     }
 
     //------------------------------------------------------------------ Filter-Modulation (EG/LFO2/FM gemeinsam fuer beide Filter)
@@ -490,6 +699,7 @@ public:
             }
         }
         syncFilterKnobs();
+        repaint (1580, 484, 570, 40);
         if (! svfCut->slider.isMouseButtonDown() && ! ladCut->slider.isMouseButtonDown())
         { lastCut[0] = (float) svfCut->slider.getValue(); lastCut[1] = (float) ladCut->slider.getValue(); }
     }
@@ -501,39 +711,31 @@ public:
         // Panel
         g.setGradientFill (ColourGradient (Col::panelTop, 0, 0, Col::panelBottom, 0, 744, false));
         g.fillRect (0.0f, 0.0f, W, 744.0f);
-        g.setColour (Colour (0xff070708));
+        g.setColour (Colour (0xff0d0e11));
         g.fillRect (0.0f, 744.0f, W, H - 744.0f);
         // feine Linie am Panelrand
         g.setColour (Colours::white.withAlpha (0.12f));
         g.drawHorizontalLine (743, 40.0f, W - 40.0f);
-        // Holzwangen
+        // Seitenteile (dunkel, wie die anderen Plugins)
         for (int side = 0; side < 2; ++side)
         {
             const float x0 = side == 0 ? 0.0f : W - 40.0f;
-            auto r = Rectangle<float> (x0, 0.0f, 40.0f, H);
-            g.setGradientFill (ColourGradient (Colour (0xff3a2112), x0, 0, Colour (0xff6a4327), x0 + 40.0f, 0, false));
-            g.fillRect (r);
-            Random rnd (side + 7);
-            for (int i = 0; i < 90; ++i)
-            {
-                const float x = x0 + rnd.nextFloat() * 40.0f;
-                g.setColour (Colour (rnd.nextBool() ? 0xff24130a : 0xff8a5a36).withAlpha (0.12f + rnd.nextFloat() * 0.16f));
-                g.drawLine (x, 0.0f, x + (rnd.nextFloat() - 0.5f) * 6.0f, H, 0.6f + rnd.nextFloat());
-            }
-            g.setColour (Colours::black.withAlpha (0.55f));
+            g.setColour (Colour (0xff1d1f24));
+            g.fillRect (x0, 0.0f, 40.0f, H);
+            g.setColour (Colour (0xff2b2e35));
             g.drawVerticalLine (side == 0 ? 39 : (int) x0, 0.0f, H);
         }
         // Module
         for (auto& m : mods)
         {
             auto r = m.r.toFloat();
-            g.setColour (Colours::black.withAlpha (0.3f));
-            g.fillRoundedRectangle (r, 5.0f);
-            g.setColour (Col::line.withAlpha (0.5f));
-            g.drawRoundedRectangle (r, 5.0f, 1.0f);
+            g.setColour (Colour (0xff1d1f24));
+            g.fillRoundedRectangle (r, 6.0f);
+            g.setColour (Colour (0xff2b2e35));
+            g.drawRoundedRectangle (r, 6.0f, 1.0f);
             g.setFont (F (10.5f).withExtraKerningFactor (0.1f));
             const float tw = F (10.5f).withExtraKerningFactor (0.1f).getStringWidthFloat (m.title) + 12.0f;
-            g.setColour (Colour (0xff0f0f11));
+            g.setColour (Colour (0xff1d1f24));
             g.fillRect (r.getX() + 9.0f, r.getY() - 2.0f, tw, 5.0f);
             g.setColour (Col::text);
             g.drawText (m.title, Rectangle<int> (m.r.getX() + 14, m.r.getY() - 8, (int) tw, 16), Justification::centredLeft, false);
@@ -544,22 +746,25 @@ public:
             g.setFont (F (c.size));
             g.drawText (c.text, Rectangle<int> (c.x, c.y, 520, 12), c.center ? Justification::centred : Justification::centredLeft, false);
         }
-        // Typenschild
-        auto plate = Rectangle<float> (1580.0f, 494.0f, 560.0f, 230.0f);
-        g.setGradientFill (ColourGradient (Colour (0xff151518), plate.getX(), plate.getY(), Colour (0xff0a0a0b), plate.getRight(), plate.getBottom(), false));
-        g.fillRoundedRectangle (plate, 5.0f);
-        g.setColour (Col::line.withAlpha (0.35f));
-        g.drawRoundedRectangle (plate, 5.0f, 1.0f);
-        g.setColour (Col::text);
-        g.setFont (F (88.0f).withExtraKerningFactor (0.14f));
-        g.drawText ("THE ONE", plate.withTrimmedTop (36.0f).withHeight (100.0f).toNearestInt(), Justification::centred, false);
-        g.setColour (Col::led);
-        g.fillRect (plate.getX() + 60.0f, plate.getY() + 150.0f, plate.getWidth() - 120.0f, 2.0f);
-        g.setColour (Col::textDim);
-        g.setFont (F (13.0f).withExtraKerningFactor (0.22f));
-        g.drawText ("16-VOICE POLYPHONIC SYNTHESIZER", plate.withTrimmedTop (162.0f).withHeight (20.0f).toNearestInt(), Justification::centred, false);
-        g.setFont (F (12.0f).withExtraKerningFactor (0.12f));
-        g.drawText ("by Dani Koenig", plate.withTrimmedTop (186.0f).withHeight (20.0f).toNearestInt(), Justification::centred, false);
+        // Sequencer: Legende, Stufennummern und Lauf-LED
+        {
+            const int mx = 1580, my = 484;
+            g.setColour (Col::textDim);
+            g.setFont (F (7.5f));
+            const char* gl[4] = { "REST", "ONE", "MULTI", "HOLD" };
+            for (int k = 0; k < 4; ++k) g.drawText (gl[k], Rectangle<int> (mx + 40, my + 177 + k * 10 + 1, 64, 10), Justification::centredRight, false);
+            g.drawText ("GATE TYPE", Rectangle<int> (mx + 8, my + 177 + 15, 40, 10), Justification::centredLeft, false);
+            g.drawText ("STEP", Rectangle<int> (mx + 40, my + 228, 56, 10), Justification::centredRight, false);
+            const int cur = proc.seqStage.load();
+            const int len = (int) std::lround (apvts.getRawParameterValue ("seq_len")->load());
+            for (int i = 0; i < TO::kSeqSteps; ++i)
+            {
+                g.setColour (i < len ? Col::text : Col::textDim.withAlpha (0.4f));
+                g.setFont (F (8.5f));
+                g.drawText (String (i + 1), Rectangle<int> (stageX[i], my + 12, 29, 10), Justification::centred, false);
+                drawLed (g, Rectangle<float> (6.0f, 6.0f).withCentre ({ (float) stageX[i] + 14.5f, (float) my + 28.0f }), i == cur);
+            }
+        }
     }
 
     static constexpr int kW0 = TheOneEditor::kW, kH0 = TheOneEditor::kH;
@@ -581,6 +786,10 @@ private:
     std::vector<FxUI> fx;
     KnobCtl *svfCut = nullptr, *ladCut = nullptr, *fEg = nullptr, *fLfo = nullptr, *fFm = nullptr;
     LedToggle *modSvf = nullptr, *modLad = nullptr;
+    ComboBox* progBox = nullptr;
+    std::unique_ptr<StartScreen> start;
+    int stageX[TO::kSeqSteps] {};
+    int lastSeqStage = -2;
     bool syncing = false, linkGuard = false;
     float lastCut[2] = { 0, 0 };
 };

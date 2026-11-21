@@ -25,10 +25,10 @@ public:
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 4.0; }
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram (int) override {}
-    const juce::String getProgramName (int) override { return "Init"; }
+    int getNumPrograms() override;
+    int getCurrentProgram() override { return currentProgram; }
+    void setCurrentProgram (int) override;
+    const juce::String getProgramName (int) override;
     void changeProgramName (int, const juce::String&) override {}
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void*, int) override;
@@ -48,15 +48,27 @@ public:
     std::atomic<bool> learnActive { false };
     std::atomic<int> learnCount { 0 };
     std::atomic<float> outLevel { 0.0f };
+    std::atomic<int> seqStage { -1 };   // laufende Stufe fuer die Anzeige
 
     void setChordFromString (const juce::String&);
     juce::String chordToString() const;
     void clearChord();
+    void panic();   // Message-Thread: alles stumm, Hold aus
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout (const std::vector<TO::PDef>&);
     void applyChord (const std::vector<int>&);
 
+    std::atomic<bool> panicFlag { false };
+    void runSequencer (juce::MidiBuffer&, int numSamples, double bpm, bool learn);
+    juce::Array<int> seqKeys;
+    bool seqRunning = false;
+    int seqRoot = 60, seqStageIdx = 0, seqPulseIdx = 0, seqSounding = -1;
+    double seqToPulse = 0.0, seqOffIn = -1.0;
+    float seqVel = 0.8f;
+    int seqDir = 1;
+    juce::Random seqRng;
+    int currentProgram = 0;
     TO::Synth synth;
     TO::FxChain fx;
     std::vector<std::atomic<float>*> raw;
