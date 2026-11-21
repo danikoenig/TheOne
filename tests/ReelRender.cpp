@@ -69,6 +69,7 @@ int main (int argc, char** argv)
 
     // ---------------- Hook: grosses Pad (Takt 0-3)
     prog (0, 1);
+    S (0, "out_vol", 0.755f);
     chord (0.1, { 45, 52, 55, 59, 60 }, 11.2);
 
     // ---------------- Oszillatoren (Takt 3-10, Beat 6-20)
@@ -118,8 +119,10 @@ int main (int argc, char** argv)
             N (bar * 4.0 + off, roots[(bar - 22) % 4], 0.3, 0.85f);
 
     // ---------------- Pads (Takt 30-37, Beat 60-74)
+    R (116, 119.8, "fx1_mix", 0.3f, 0.0f);
+    R (116, 119.8, "fx1_p2", 0.45f, 0.0f);
     prog (120, 1);
-    S (120, "out_vol", 0.72f);
+    S (120, "out_vol", 0.68f);
     chord (120.04, { 45, 52, 55, 59, 60 }, 7.8);
     chord (128.04, { 41, 48, 52, 57 }, 7.8);
     chord (136.04, { 48, 55, 59, 64 }, 7.8);
@@ -182,7 +185,7 @@ int main (int argc, char** argv)
     // Ausklang (Beat 164-180)
     S (328, "seq_on", 0);
     prog (328.1, 1);
-    S (328.2, "out_vol", 0.72f);
+    S (328.2, "out_vol", 0.68f);
     chord (328.4, { 45, 52, 55, 59, 60 }, 19, 0.75f);
 
     std::stable_sort (acts.begin(), acts.end(), [] (auto& a, auto& b) { return a.b < b.b; });   // gleiche Zeit: Reihenfolge wie notiert (Programm zuerst)

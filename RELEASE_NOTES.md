@@ -2,7 +2,12 @@ Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CL
 
 **Download `TheOne-Installer.pkg`** and double-click it. macOS blocks it the first time: open System Settings > Privacy & Security and click "Open Anyway". Full guide: see INSTALL.txt in the ZIP or in the repository.
 
-### New in v1.4.2
+### New in v1.4.3
+- No more clicks when voices are stolen: a busy voice fades out in 2 ms before it takes the new note (big unison pads)
+- Changing the start program switches CHORD off (the learned chord stays stored)
+- All GUI texts in English
+
+### v1.4.2
 - New bass program "04 - Bass - Sub": saw + square at 8', sine sub one octave below, punchy 24 dB ladder envelope, phase reset
 
 ### v1.4.1

@@ -489,7 +489,7 @@ public:
         owned.add (clr); addAndMakeVisible (clr);
         clr->setBounds (ox + 420, oy + 31, 70, 22);
         clr->onClick = [this] { proc.clearChord(); };
-        Ctext ("Learn: Noten spielen, Learn aus, Chord an. Jede Taste spielt dann den Akkord, starr transponiert.", 14, 66, 9.0f);
+        Ctext ("LEARN on, play the chord, LEARN off, CHORD on. Every key then plays the chord, transposed.", 14, 66, 9.0f);
     }
 
     void buildCenter()

@@ -63,6 +63,10 @@ struct Voice
     float gA = 0.1f, gB = 0.1f, kS = 1, gL = 0.1f, kL = 1;
     int ci = 0;
     bool slide = false;
+    // Stimmen-Klau ohne Klick: alte Stimme wird kurz ausgeblendet, dann startet die neue Note
+    struct Pend { int key = 0, note = 0, u = 0, U = 1, ci = 0, idx = 0; float vel = 1; bool retrig = true, mono = false, relEarly = false; } pend;
+    bool pending = false;
+    int fade = 0;
 };
 
 class Synth
@@ -87,6 +91,8 @@ public:
 private:
     struct LfoC { int wave = 0; float var = 0; bool bi = true, reset = false; float inc = 0, delay = 0, fade = 0, startPh = 0; };
     void startNote (int key, int note, float vel, int unisonIdx, int unisonCount, int chordIdx, bool retrigger, bool monoVoice);
+    void startOn (int idx, int key, int note, float vel, int unisonIdx, int unisonCount, int chordIdx, bool retrigger, bool monoVoice, bool fresh);
+    static constexpr int kFade = 96;   // ca. 2 ms
     int allocVoice (int polyCount);
     void releaseVoice (Voice& v);
     void releaseKey (int key);

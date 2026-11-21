@@ -158,6 +158,23 @@ void Synth::startNote (int key, int note, float vel, int u, int U, int ci, bool 
     const int poly = (int) std::lround (P[VOI0 + V_POLY]);
     const int idx = allocVoice (poly);
     Voice& v = voices[(size_t) idx];
+    if (v.active && ! v.pending && v.env[1].level > 0.002f && ! (monoVoice && v.mono && v.gate))
+    {
+        // hoerbare Stimme wird geklaut: erst ausblenden, dann im naechsten Block starten
+        v.pend = { key, note, u, U, ci, idx, vel, retrigger, monoVoice, false };
+        v.pending = true; v.fade = kFade;
+        v.key = key; v.mono = monoVoice; v.gate = true; v.sustained = false;
+        v.order = ++orderCounter;
+        lastNote = (float) note;
+        return;
+    }
+    startOn (idx, key, note, vel, u, U, ci, retrigger, monoVoice, false);
+}
+
+void Synth::startOn (int idx, int key, int note, float vel, int u, int U, int ci, bool retrigger, bool monoVoice, bool fresh)
+{
+    Voice& v = voices[(size_t) idx];
+    if (fresh) v.active = false;
     const bool wasActive = v.active;
     v.key = key; v.mono = monoVoice; v.ci = ci; v.slide = false;
     v.order = ++orderCounter; v.gate = true; v.sustained = false; v.age = 0;
@@ -189,6 +206,7 @@ void Synth::startNote (int key, int note, float vel, int u, int U, int ci, bool 
 
 void Synth::releaseVoice (Voice& v)
 {
+    if (v.pending) { v.pend.relEarly = true; return; }
     v.gate = false; v.sustained = false;
     for (int i = 0; i < 3; ++i) v.env[i].gateOff (ecfg[i]);
     v.nenv.gateOff (ecfg[3]);
@@ -313,7 +331,7 @@ void Synth::allNotesOff()
 
 void Synth::panic()
 {
-    for (auto& v : voices) { v.active = false; v.gate = false; v.sustained = false; }
+    for (auto& v : voices) { v.active = false; v.gate = false; v.sustained = false; v.pending = false; }
     monoStack.clear();
     keysDown = 0;
     pedal = false;
@@ -405,6 +423,16 @@ void Synth::renderChunk (float* L, float* R, int n, double bpm)
             if (s.ph >= 1.0f) { s.ph -= 1.0f; wrapped = true; }
             const float o = lfoWave (lc[l].wave, lc[l].var, s.ph, s, wrapped, grng);
             gl[l][i] = lc[l].bi ? o : (o + 1.0f) * 0.5f;
+        }
+
+    // ausgeblendete Stimmen jetzt mit der neuen Note starten
+    for (auto& v : voices)
+        if (v.pending && v.fade <= 0)
+        {
+            const auto p = v.pend;
+            v.pending = false;
+            startOn (p.idx, p.key, p.note, p.vel, p.u, p.U, p.ci, p.retrig, p.mono, true);
+            if (p.relEarly) { if (pedal || (P != nullptr && P[VOI0 + V_HOLD] > 0.5f)) v.sustained = true; else releaseVoice (v); }
         }
 
     for (auto& v : voices)
@@ -693,6 +721,7 @@ void Synth::renderVoice (Voice& v, float* L, float* R, int n, const float (*gl)[
         float amp = egA * 0.3f;
         if (l4dest == 3) amp *= std::max (0.0f, 1.0f + 0.5f * l4amt * lv[3]);
         y *= amp;
+        if (v.pending) { if (v.fade > 0) { y *= (float) v.fade / (float) kFade; --v.fade; } else y = 0.0f; }
         const float pan = std::clamp (v.pan + (l4dest == 4 ? lv[3] * l4amt : 0.0f), -1.0f, 1.0f);
         const float ang = (pan + 1.0f) * 0.25f * kPi;
         L[i] += y * std::cos (ang) * 1.41421356f;

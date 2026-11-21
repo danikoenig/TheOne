@@ -183,7 +183,7 @@ void TheOneProcessor::setCurrentProgram (int idx)
         if (auto* rp = dynamic_cast<RangedAudioParameter*> (prm))
         {
             const String id = rp->paramID;
-            if (id.startsWith ("out_") || id == "v_hold" || id == "v_chord" || id == "v_learn" || id == "v_silent") continue;
+            if (id.startsWith ("out_") || id == "v_hold" || id == "v_learn" || id == "v_silent") continue;
             rp->setValueNotifyingHost (rp->getDefaultValue());
         }
     for (auto& kv : programs()[(size_t) idx].v)

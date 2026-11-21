@@ -99,6 +99,39 @@ int main (int argc, char** argv)
     for (int i = 0; i < TO::kFxDivs; ++i) printf ("%s=%.3f ", TO::fxDivName (i), TO::kFxDivBeats[i]);
     printf ("\n");
 
+    // Klick-Test: Pad-Akkordwechsel
+    for (int variant = 0; variant < 4; ++variant)
+    {
+        TheOneProcessor q;
+        q.setPlayConfigDetails (0, 2, 48000, 64);
+        q.prepareToPlay (48000, 64);
+        q.setCurrentProgram (1);
+        auto qs = [&] (const char* id, float v) { if (auto* a = q.apvts.getParameter (id)) a->setValueNotifyingHost (a->convertTo0to1 (v)); };
+        if (variant == 1) qs ("v_unison", 0);
+        if (variant == 2) { qs ("fx1_type", 0); qs ("fx2_type", 0); }
+        if (variant == 3) qs ("v_poly", 8);
+        const int c1[5] = { 45, 52, 55, 59, 60 }, c2[4] = { 41, 48, 52, 57 };
+        std::vector<float> outv;
+        AudioBuffer<float> b (2, 64);
+        for (int pos = 0; pos < 48000 * 6; pos += 64)
+        {
+            MidiBuffer m;
+            if (pos == 0) for (int k : c1) m.addEvent (MidiMessage::noteOn (1, k, 0.8f), 0);
+            if (pos == 64 * 2925) for (int k : c1) m.addEvent (MidiMessage::noteOff (1, k), 0);   // ~3.9 s
+            if (pos == 64 * 3000) for (int k : c2) m.addEvent (MidiMessage::noteOn (1, k, 0.8f), 1);   // 4.0 s
+            b.clear(); q.processBlock (b, m);
+            for (int i = 0; i < 64; ++i) outv.push_back (b.getSample (0, i));
+        }
+        float atChange = 0, steady = 0;
+        for (size_t i = 2; i < outv.size(); ++i)
+        {
+            const float d2 = std::fabs (outv[i] - 2 * outv[i - 1] + outv[i - 2]);
+            if (i > 192000 - 200 && i < 192000 + 4800) atChange = jmax (atChange, d2);
+            if (i > 192000 + 48000 && i < 192000 + 96000) steady = jmax (steady, d2);
+        }
+        printf ("click variant %d: change %.4f steady %.4f\n", variant, atChange, steady);
+    }
+
     // Bass-Demo (WAV zum Abhoeren)
     {
         TheOneProcessor q;
