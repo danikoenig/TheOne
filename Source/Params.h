@@ -139,7 +139,7 @@ inline std::vector<PDef> makeDefs()
         F (s + "mix", n + "Pulse Mix", 0, 1, 0, dTen);
         B (s + "sync", n + "Hard Sync", false);
         F (s + "track", n + "Pitch Tracking", 0, 2, 1, dPct);
-        B (s + "reset", n + "Note-On Reset", false);
+        B (s + "reset", n + "Phase Reset", false);
     }
     // Mixer
     const char* ch[6] = { "OSC 1", "OSC 2", "OSC 3", "RING MOD", "NOISE", "SUB" };
@@ -220,7 +220,7 @@ inline std::vector<PDef> makeDefs()
         C (s + "timing", n + "Sync Timing", { "STRAIGHT", "DOTTED", "TRIPLET" }, 0);
         F (s + "delay", n + "Delay", 0, 1, 0, dDelay);
         F (s + "fade", n + "Fade In", 0, 1, 0, dDelay);
-        B (s + "reset", n + "Note-On Reset", false);
+        B (s + "reset", n + "Phase Reset", false);
         F (s + "phase", n + "Start Phase", 0, 1, 0, dPct);
     }
     C ("x_l4dest", "LFO 4 Destination", { "PITCH", "CUTOFF", "RESO", "AMP", "PAN", "PULSE W", "WAVE ANGLE", "OSC MIX" }, 0);

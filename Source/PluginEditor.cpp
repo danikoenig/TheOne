@@ -440,10 +440,10 @@ public:
             K (s + "pw", "PULSE WIDTH", 8, 164, 52);
             K (s + "mix", "MIX", 70, 164, 52);
             K (s + "track", "TRACK", 132, 164, 52);
-            S (s + "oct", 8, 240, 176, 20, false);
-            S (s + "wave", 8, 266, 54, 20, false);
-            if (i > 0) T (s + "sync", "SYNC", 66, 268, 58, 15);
-            T (s + "reset", "RESET", 124, 268, 62, 15);
+            S (s + "oct", 6, 240, 130, 20, false);
+            S (s + "wave", 140, 240, 48, 20, false);
+            if (i > 0) T (s + "sync", "SYNC", 8, 268, 60, 15);
+            T (s + "reset", "PHASE RESET", 80, 268, 110, 15);
         }
         M ("OSC COMMON", 662, 190, 148, 292, Acc::osc);
         K ("c_lfo1", "LFO1>PIT", 10, 24, 48);
