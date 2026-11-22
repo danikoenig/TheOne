@@ -90,7 +90,11 @@ void TheOneProcessor::prepareToPlay (double sr, int blockSize)
     limGain = 1.0f;
     limAtt = std::exp (-3.0f / (float) laLen);
     limRel = std::exp (-1.0f / (0.15f * (float) sr));
-    setLatencySamples (laLen);
+    os = std::make_unique<dsp::Oversampling<float>> (2, 2, dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+    os->initProcessing ((size_t) std::max (blockSize, 8192));
+    os->reset();
+    clipS.reset (sr * 4.0, 0.03); clipS.setCurrentAndTargetValue (1.0f);
+    setLatencySamples (laLen + (int) std::lround (os->getLatencyInSamples()));
 }
 
 void TheOneProcessor::applyChord (const std::vector<int>& iv)
@@ -133,8 +137,8 @@ namespace
     const std::vector<Prog>& programs()
     {
         static const std::vector<Prog> p = {
-            { "01 - Init - Saw", {} },
-            { "02 - Pad - Warm Unison", {
+            { "Init", {} },
+            { "Pad - Warm Unison", {
                 { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc3_oct", 3 },
                 { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc3_wave", 0 },
                 { "osc2_beat", 0.35f }, { "osc3_beat", -0.3f }, { "osc3_angle", 0.0f },
@@ -144,7 +148,7 @@ namespace
                 { "feg_att", 0.72f }, { "feg_dec", 0.8f }, { "feg_sus", 0.45f }, { "feg_rel", 0.8f },
                 { "v_poly", 16 }, { "v_unison", 1 }, { "v_ucount", 3 }, { "v_detune", 0.3f }, { "v_spread", 0.8f },
                 { "fx1_type", 9 }, { "fx1_mix", 0.5f }, { "fx2_type", 2 }, { "fx2_mix", 0.25f } } },
-            { "03 - Lead - Mono Glide", {
+            { "Lead - Mono Glide", {
                 { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
                 { "osc2_beat", 0.2f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.5f },
                 { "lad_cut", 0.62f }, { "lad_res", 0.3f }, { "lad_eg", 0.4f },
@@ -152,7 +156,7 @@ namespace
                 { "feg_dec", 0.55f }, { "feg_sus", 0.3f },
                 { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.2f }, { "c_moddepth", 1.5f },
                 { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } } },
-            { "04 - Bass - Sub", {
+            { "Bass - Sub", {
                 { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 0 }, { "osc2_mix", 1 }, { "osc2_pw", 0.5f },
                 { "osc2_beat", 0.15f }, { "osc1_reset", 1 }, { "osc2_reset", 1 },
                 { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.4f }, { "mix_lvl5", 0.6f }, { "sub_oct", 0 }, { "sub_wave", 0 },
@@ -160,7 +164,7 @@ namespace
                 { "feg_att", 0.0f }, { "feg_dec", 0.5f }, { "feg_sus", 0.08f }, { "feg_rel", 0.35f }, { "feg_vel", 0.4f },
                 { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.8f }, { "aeg_rel", 0.3f },
                 { "v_mono", 1 }, { "v_glideon", 0 }, { "v_multi", 1 } } },
-            { "05 - Pluck - Poly", {
+            { "Pluck - Poly", {
                 { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_mix", 0.6f }, { "osc2_pw", 0.3f }, { "osc2_beat", 0.25f },
                 { "mix_lvl0", 0.6f }, { "mix_lvl1", 0.45f },
                 { "lad_cut", 0.34f }, { "lad_res", 0.2f }, { "lad_eg", 0.6f },
@@ -483,6 +487,32 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     { uint64_t lo, hi; synth.soundingNotes (lo, hi); genLo.store (lo); genHi.store (hi); }
 
     fx.process (L, R, numSamples, P.data(), bpm);
+
+    // KNACK-Clipper (4x Oversampling): CLIP treibt bis +24 dB in die Knack-Kurve, bei 0 unveraendert.
+    // Bezugspegel = Ausgang bei VOLUME 8, damit der Clip-Einsatz nicht vom Volume abhaengt.
+    {
+        const float refG = 0.64f * 3.2f;
+        const float clip = P[(size_t) TO::OUT0 + TO::OUT_CLIP];
+        clipS.setTargetValue (Decibels::decibelsToGain (clip * 24.0f));
+        float* chans[2] = { L, R };
+        dsp::AudioBlock<float> blk (chans, 2, (size_t) numSamples);
+        auto up = os->processSamplesUp (blk);
+        const int nUp = (int) up.getNumSamples();
+        float* uL = up.getChannelPointer (0);
+        float* uR = up.getChannelPointer (1);
+        constexpr float k = 6.8f;   // Knack SOFT/HARD in der Mitte
+        auto sh = [] (float x) { const float ax = std::fabs (x); return x / std::pow (1.0f + std::pow (ax, k), 1.0f / k); };
+        for (int i = 0; i < nUp; ++i)
+        {
+            const float d = clipS.getNextValue();
+            if (d > 1.0005f)
+            {
+                uL[i] = sh (uL[i] * refG * d) / refG;
+                uR[i] = sh (uR[i] * refG * d) / refG;
+            }
+        }
+        os->processSamplesDown (blk);
+    }
 
     // Master (Init um -9 dBFS, Akkorde mit Luft) + Limiter mit Vorschau, Decke -1 dBFS
     const float vol = P[(size_t) TO::OUT0 + TO::OUT_VOL];

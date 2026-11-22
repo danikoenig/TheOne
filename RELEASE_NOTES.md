@@ -1,5 +1,12 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v1.6.0
+- CLIP: Knack clipper in OUTPUT before the volume (up to +24 dB, 4x oversampled), 0 % = clean
+- CLIP and VOLUME as two matching knobs, PANIC smaller
+- Start screen removed; the plugin opens with the preset Init. Factory presets without numbers
+- Version number shown at the top of the display
+- Manuals updated
+
 ### New in v1.5.0
 - Presets: save, load and step through your own sounds from the bar at the top of the display (< / >, menu, SAVE, DEL)
 - A preset stores everything: all controls, every sequencer step and the learned chord

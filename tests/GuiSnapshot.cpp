@@ -139,6 +139,24 @@ int main (int argc, char** argv)
         printf ("click variant %d: change %.4f steady %.4f\n", variant, atChange, steady);
     }
 
+    // Clip-Test: Bass mit CLIP 0 / 50 / 100 %
+    for (float cl : { 0.0f, 0.5f, 1.0f })
+    {
+        TheOneProcessor q;
+        q.setPlayConfigDetails (0, 2, 48000, 512);
+        q.prepareToPlay (48000, 512);
+        q.setCurrentProgram (3);
+        if (auto* a = q.apvts.getParameter ("out_clip")) a->setValueNotifyingHost (cl);
+        AudioBuffer<float> b (2, 512); MidiBuffer m; double sq = 0; float pk = 0; int n = 0;
+        for (int i = 0; i < 200; ++i)
+        {
+            m.clear(); if (i % 12 == 0) m.addEvent (MidiMessage::noteOn (1, 45, 1.0f), 0); if (i % 12 == 8) m.addEvent (MidiMessage::noteOff (1, 45), 0);
+            b.clear(); q.processBlock (b, m);
+            for (int k = 0; k < 512; ++k) { const float v = b.getSample (0, k); sq += v * v; ++n; pk = jmax (pk, std::fabs (v)); }
+        }
+        printf ("clip %.0f%%: rms %.1f dB peak %.2f latency %d name %s\n", cl * 100, 10 * std::log10 (sq / n), pk, q.getLatencySamples(), q.currentPresetName().toRawUTF8());
+    }
+
     // Preset-Test: speichern, aendern, laden
     {
         TheOneProcessor q;

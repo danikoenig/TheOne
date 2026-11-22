@@ -32,7 +32,7 @@ public:
         g.drawText ("THE ONE", a.withHeight (24.0f).toNearestInt(), Justification::centredLeft, false);
         g.setColour (Col::textDim);
         g.setFont (F (9.0f).withExtraKerningFactor (0.1f));
-        g.drawText ("by Dani Koenig", Rectangle<int> ((int) a.getX() + 112, (int) a.getY() + 6, 100, 14), Justification::centredLeft, false);
+        g.drawText ("by Dani Koenig  v" JucePlugin_VersionString, Rectangle<int> ((int) a.getX() + 112, (int) a.getY() + 6, 130, 14), Justification::centredLeft, false);
         // rechts: Tempo und Stimmen
         g.setColour (Col::text);
         g.setFont (F (11.0f));
@@ -96,74 +96,6 @@ public:
 private:
     TheOneProcessor& proc;
     String rName, rValue;
-};
-
-//==============================================================================
-// Startfenster (wie "Getting Started" bei Falcon), abschaltbar
-static std::unique_ptr<PropertiesFile> openSettings()
-{
-    PropertiesFile::Options o;
-    o.applicationName = "The One";
-    o.folderName = "Dani Koenig";
-    o.filenameSuffix = ".settings";
-    o.osxLibrarySubFolder = "Application Support";
-    return std::make_unique<PropertiesFile> (o);
-}
-
-class StartScreen : public Component
-{
-public:
-    std::function<void (int)> onPick;
-    std::function<void()> onClose;
-
-    StartScreen (TheOneProcessor& p) : proc (p), showToggle ("SHOW AT STARTUP")
-    {
-        for (int i = 0; i < proc.getNumPrograms(); ++i)
-        {
-            auto* b = new TextButton (proc.getProgramName (i));
-            rows.add (b); addAndMakeVisible (b);
-            b->setColour (TextButton::buttonColourId, Colour (0xff26282e));
-            b->setColour (TextButton::buttonOnColourId, Colour (0xff3a3e47));
-            b->onClick = [this, i] { if (onPick) onPick (i); };
-        }
-        addAndMakeVisible (showToggle);
-        auto s = openSettings();
-        showToggle.setState (s->getBoolValue ("showAtStartup", true));
-        showToggle.onChange = [] (bool b) { auto st = openSettings(); st->setValue ("showAtStartup", b); st->saveIfNeeded(); };
-        addAndMakeVisible (closeBtn);
-        closeBtn.setButtonText ("CLOSE");
-        closeBtn.onClick = [this] { if (onClose) onClose(); };
-    }
-    static bool shouldShow() { return openSettings()->getBoolValue ("showAtStartup", true); }
-
-    Rectangle<int> card() const { const int h = 150 + rows.size() * 50; return Rectangle<int> (0, 0, 620, h).withCentre (getLocalBounds().getCentre().translated (0, -40)); }
-    void resized() override
-    {
-        auto c = card();
-        for (int i = 0; i < rows.size(); ++i) rows[i]->setBounds (c.getX() + 30, c.getY() + 80 + i * 50, c.getWidth() - 60, 44);
-        showToggle.setBounds (c.getX() + 30, c.getBottom() - 50, 200, 20);
-        closeBtn.setBounds (c.getRight() - 140, c.getBottom() - 56, 110, 30);
-    }
-    void paint (Graphics& g) override
-    {
-        g.fillAll (Colours::black.withAlpha (0.62f));
-        auto c = card().toFloat();
-        g.setColour (Colour (0xff1d1f24)); g.fillRoundedRectangle (c, 10.0f);
-        g.setColour (Colour (0xff2b2e35)); g.drawRoundedRectangle (c, 10.0f, 1.5f);
-        g.setColour (Col::text);
-        g.setFont (F (26.0f));
-        g.drawText ("Getting Started", c.withHeight (60.0f).withTrimmedLeft (30.0f).translated (0, 12).toNearestInt(), Justification::centredLeft, false);
-        g.setColour (Col::textDim);
-        g.setFont (F (12.0f, false));
-        g.drawText ("Pick a starting point. Everything stays editable.", c.withHeight (20.0f).withTrimmedLeft (30.0f).translated (0, 54).toNearestInt(), Justification::centredLeft, false);
-    }
-    void mouseDown (const MouseEvent& e) override { if (! card().contains (e.getPosition()) && onClose) onClose(); }
-
-private:
-    TheOneProcessor& proc;
-    OwnedArray<TextButton> rows;
-    LedToggle showToggle;
-    TextButton closeBtn;
 };
 
 //==============================================================================
@@ -494,14 +426,7 @@ public:
         keys.setWantsKeyboardFocus (false);
         keys.generated = [this] (int n) { const uint64_t m = n < 64 ? proc.genLo.load() : proc.genHi.load(); return ((m >> (n & 63)) & 1) != 0; };
         startTimerHz (30);
-        start = std::make_unique<StartScreen> (proc);
-        addChildComponent (*start);
-        start->setBounds (0, 0, kW0, kH0);
-        start->onPick = [this] (int i) { proc.setCurrentProgram (i); presets.refresh(); showStart (false); };
-        start->onClose = [this] { showStart (false); };
-        if (StartScreen::shouldShow()) showStart (true);
     }
-    void showStart (bool on) { start->setVisible (on); if (on) start->toFront (false); }
     ~Content() override { setLookAndFeel (nullptr); }
     void tick() { timerCallback(); }
 
@@ -795,20 +720,19 @@ public:
             T (s + "loop", "LOOP", 190, 146, 66, 15);
             T (s + "latch", "LATCH", 190, 168, 70, 15);
         }
-        // Ausgang, Programme, Panic (TEMPO nur in der Standalone-App)
+        // Ausgang: KNACK-Clip oben, Volume darunter, kleiner Panic-Knopf (TEMPO nur in der Standalone-App)
         M ("OUTPUT", 1260, 484, 160, 250, Acc::fx);
         const bool standalone = proc.wrapperType == AudioProcessor::wrapperType_Standalone;
-        K ("out_vol", "VOLUME", standalone ? 6 : 36, 20, 88, true);
-        if (standalone) K ("out_tempo", "TEMPO", 106, 40, 44);
-
-        auto* st = new TextButton ("START SCREEN");
-        owned.add (st); addAndMakeVisible (st);
-        st->setBounds (ox + 10, oy + 150, 140, 28);
-        st->onClick = [this] { showStart (true); };
+        const int kx = standalone ? 14 : 47;
+        cur = Colour (0xffff5a3d);   // Knack
+        K ("out_clip", "CLIP", kx, 16, 66, true);
+        cur = Acc::fx;
+        K ("out_vol", "VOLUME", kx, 106, 66, true);
+        if (standalone) K ("out_tempo", "TEMPO", 104, 112, 42);
         auto* pan = new TextButton ("PANIC");
         owned.add (pan); addAndMakeVisible (pan);
-        pan->setColour (TextButton::textColourOffId, Colour (0xffff1f3f));
-        pan->setBounds (ox + 10, oy + 188, 140, 28);
+        pan->setColour (TextButton::textColourOffId, Col::textDim);
+        pan->setBounds (ox + 50, oy + 222, 60, 18);
         pan->onClick = [this] { proc.panic(); };
 
         // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
@@ -1021,7 +945,6 @@ private:
     std::vector<FxUI> fx;
     KnobCtl *svfCut = nullptr, *ladCut = nullptr, *fEg = nullptr, *fLfo = nullptr, *fFm = nullptr;
     LedToggle *modSvf = nullptr, *modLad = nullptr;
-    std::unique_ptr<StartScreen> start;
     int stageX[TO::kSeqSteps] {};
     int lastSeqStage = -2;
     uint64_t lastGenLo = 0, lastGenHi = 0;

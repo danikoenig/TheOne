@@ -17,7 +17,7 @@ CONTENT = {
  "blocks": [],
  "quick_title": "Quick start",
  "quick": [
-   ("1. Load", "Put <b>The One</b> on an instrument track in your DAW and play. The start program is a simple saw sound."),
+   ("1. Load", "Put <b>The One</b> on an instrument track in your DAW and play. It starts with the preset Init, a simple saw sound."),
    ("2. Mix", "In the <b>MIXER</b> raise OSC 2 and OSC 3 and detune them a little with FREQUENCY or BEAT for a fat sound."),
    ("3. Filter", "Lower the <b>LADDER CUTOFF</b> and raise <b>EG AMOUNT</b>: the Filter EG now opens the sound with every key."),
    ("4. Shape", "Set the <b>AMP EG</b> (attack, decay, sustain, release) for pad or pluck, then add a delay or chorus in an <b>FX</b> slot."),
@@ -89,8 +89,13 @@ CONTENT = {
     ("DAW TRANSPORT", "With the DAW stopped the sequencer runs on its own. When the DAW plays, it starts at step 1 with the DAW, locks to its grid and stops when the DAW stops."),
     ("Own plugin", "The same sequencer is available as the separate plugin Grinder."),
   ]),
+  ("#4fb8ee", "OUTPUT", [
+    ("CLIP", "Knack clipper before the volume: up to +24 dB into a soft-to-hard curve, 4x oversampled. 0 % leaves the sound untouched. Great to push basses."),
+    ("VOLUME", "Output level after the clipper. A limiter keeps peaks at -1 dBFS."),
+    ("PANIC", "Stops all notes and switches HOLD off."),
+  ]),
   ("#4fb8ee", "PRESETS (top of the display)", [
-    ("< / >", "Steps through all presets: the five factory programs first, then your own."),
+    ("< / >", "Steps through all presets: Init and four factory starting points (Pad, Lead, Bass, Pluck), then your own."),
     ("Preset name", "Click for the menu: FACTORY, your presets sorted by category, and Open preset folder."),
     ("SAVE", "Saves everything: all controls, every sequencer step and the learned chord. Category = subfolder, may stay empty."),
     ("DEL", "Moves your preset to the trash. Factory programs cannot be deleted."),
@@ -107,8 +112,8 @@ CONTENT = {
  "tips": [
    "Save your own sounds with SAVE in the display. The DAW also stores everything in the project.",
    "Every control can be automated.",
-   "Resonance and FM can get loud: keep MASTER VOLUME and your DAW meters in view.",
-   "The tempo knob in the output section is only used when the DAW sends no tempo.",
+   "Resonance and FM can get loud: keep VOLUME and your DAW meters in view. The version number is shown at the top of the display.",
+   "The TEMPO knob appears only in the standalone app; in a DAW the host tempo is used.",
  ],
  "install": "",
 },
@@ -123,7 +128,7 @@ CONTENT = {
  "blocks": [],
  "quick_title": "Schnellstart",
  "quick": [
-   ("1. Laden", "<b>The One</b> auf eine Instrumentenspur legen und spielen. Das Startprogramm ist ein einfacher Saw-Sound."),
+   ("1. Laden", "<b>The One</b> auf eine Instrumentenspur legen und spielen. Es startet mit dem Preset Init, einem einfachen Saw-Sound."),
    ("2. Mischen", "Im <b>MIXER</b> OSC 2 und OSC 3 hochziehen und mit FREQUENCY oder BEAT leicht verstimmen: fetter Klang."),
    ("3. Filter", "<b>LADDER CUTOFF</b> runter, <b>EG AMOUNT</b> hoch: Die Filter-Hüllkurve öffnet den Klang bei jeder Taste."),
    ("4. Formen", "<b>AMP EG</b> (Attack, Decay, Sustain, Release) für Pad oder Pluck einstellen, dann in einem <b>FX</b>-Slot Delay oder Chorus zufügen."),
@@ -195,8 +200,13 @@ CONTENT = {
     ("DAW-TRANSPORT", "Bei gestoppter DAW läuft der Sequencer frei. Läuft die DAW, startet er mit ihr bei Step 1, rastet auf ihr Raster ein und stoppt, wenn die DAW stoppt."),
     ("Eigenes Plugin", "Derselbe Sequencer gibt es als separates Plugin: Grinder."),
   ]),
+  ("#4fb8ee", "OUTPUT", [
+    ("CLIP", "Knack-Clipper vor dem Volume: bis +24 dB in eine Kurve von weich bis hart, 4x Oversampling. 0 % lässt den Klang unverändert. Ideal, um Bässe anzuschieben."),
+    ("VOLUME", "Ausgangspegel nach dem Clipper. Ein Limiter hält die Spitzen bei -1 dBFS."),
+    ("PANIC", "Stoppt alle Noten und schaltet HOLD aus."),
+  ]),
   ("#4fb8ee", "PRESETS (oben im Display)", [
-    ("< / >", "Blättert durch alle Presets: zuerst die fünf Werksprogramme, dann deine eigenen."),
+    ("< / >", "Blättert durch alle Presets: Init und vier Werks-Startpunkte (Pad, Lead, Bass, Pluck), dann deine eigenen."),
     ("Preset-Name", "Klick öffnet das Menü: FACTORY, deine Presets nach Kategorie und Open preset folder."),
     ("SAVE", "Speichert alles: alle Regler, jeden Sequencer-Step und den gelernten Akkord. Kategorie = Unterordner, darf leer bleiben."),
     ("DEL", "Legt dein Preset in den Papierkorb. Werksprogramme lassen sich nicht löschen."),
@@ -213,8 +223,8 @@ CONTENT = {
  "tips": [
    "Eigene Sounds speicherst du mit SAVE im Display. Die DAW speichert zusätzlich alles im Projekt.",
    "Jeder Regler lässt sich automatisieren.",
-   "Resonanz und FM können laut werden: Behalte MASTER VOLUME und die Pegelanzeigen der DAW im Blick.",
-   "Der Tempo-Regler im Output-Bereich gilt nur, wenn die DAW kein Tempo liefert.",
+   "Resonanz und FM können laut werden: Behalte VOLUME und die Pegelanzeigen der DAW im Blick. Die Versionsnummer steht oben im Display.",
+   "Der TEMPO-Regler erscheint nur in der Standalone-App, in der DAW gilt das Tempo der DAW.",
  ],
  "install": "",
 },

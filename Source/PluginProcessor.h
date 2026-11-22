@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_dsp/juce_dsp.h>
 #include <atomic>
 #include <array>
 #include "Params.h"
@@ -62,7 +63,7 @@ public:
     juce::Array<PresetEntry> scanPresets() const;
     bool savePreset (const juce::String& name, const juce::String& category);
     bool loadPreset (const PresetEntry&);
-    juce::String currentPresetName() const { return apvts.state.getProperty ("presetName", "01 - Init - Saw").toString(); }
+    juce::String currentPresetName() const { return apvts.state.getProperty ("presetName", "Init").toString(); }
     juce::File currentPresetFile() const { return juce::File (apvts.state.getProperty ("presetFile", "").toString()); }
 
 private:
@@ -96,7 +97,8 @@ private:
     std::vector<int> pendingChord;
     int scopeDecim = 0;
     float limState = 1.0f;
-    juce::SmoothedValue<float> volS;
+    juce::SmoothedValue<float> volS, clipS;
+    std::unique_ptr<juce::dsp::Oversampling<float>> os;   // Knack-Clipper, 4x
     // Ausgangs-Limiter mit 1.5 ms Vorschau (verzerrt nicht wie ein Clipper)
     std::vector<float> laL, laR;
     int laPos = 0, laLen = 72;

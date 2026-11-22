@@ -32,7 +32,7 @@ enum { L_RATE, L_RANGE, L_WAVE, L_VAR, L_POL, L_SYNC, L_TIMING, L_DELAY, L_FADE,
 enum { X_L4DEST, X_L4AMT, X_MEDEST, X_MEAMT, X_N };
 enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD, V_CHORD, V_LEARN, V_SILENT, V_SPREAD, V_MULTI, V_N };
 enum { FX_TYPE, FX_MIX, FX_P1, FX_P2, FX_P3, FX_P4, FX_P5, FX_SYNC, FX_N };
-enum { OUT_VOL, OUT_TEMPO, OUT_N };
+enum { OUT_VOL, OUT_TEMPO, OUT_CLIP, OUT_N };
 constexpr int kSeqSteps = 16;
 enum { SQ_ON, SQ_LATCH, SQ_RATE, SQ_LEN, SQ_GATE, SQ_ORDER, SQ_RND, SQ_RNDP, SQ_RNDO, SQ_RNDA, SQ_VELRND, SQ_PITCH0, SQ_SLIDE0 = SQ_PITCH0 + kSeqSteps, SQ_ACC0 = SQ_SLIDE0 + kSeqSteps, SQ_MODE0 = SQ_ACC0 + kSeqSteps, SQ_OCT0 = SQ_MODE0 + kSeqSteps, SQ_N = SQ_OCT0 + kSeqSteps };
 
@@ -254,6 +254,7 @@ inline std::vector<PDef> makeDefs()
     }
     F ("out_vol", "Master Volume", 0, 1, 0.8f, dTen);
     F ("out_tempo", "Tempo (no host)", 40, 240, 120, dBpm);
+    F ("out_clip", "Clip (Knack)", 0, 1, 0, dPct);
     // Step-Sequencer (8 Stufen, Metropolis-Prinzip: Pitch, Pulse Count, Gate Type)
     B ("seq_on", "Seq On", false);
     B ("seq_latch", "Seq Latch", false);
