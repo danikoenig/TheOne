@@ -28,18 +28,16 @@ public:
 
         // Kopf
         g.setColour (Col::text);
-        g.setFont (F (31.0f).withExtraKerningFactor (0.16f));
-        g.drawText ("THE ONE", a.withHeight (36.0f).toNearestInt(), Justification::centredLeft, false);
+        g.setFont (F (21.0f).withExtraKerningFactor (0.16f));
+        g.drawText ("THE ONE", a.withHeight (24.0f).toNearestInt(), Justification::centredLeft, false);
         g.setColour (Col::textDim);
-        g.setFont (F (9.5f).withExtraKerningFactor (0.12f));
-        g.drawText ("POLYPHONIC SYNTHESIZER  -  by Dani Koenig", Rectangle<int> ((int) a.getX(), (int) a.getY() + 38, (int) a.getWidth(), 14), Justification::centredLeft, false);
+        g.setFont (F (9.0f).withExtraKerningFactor (0.1f));
+        g.drawText ("by Dani Koenig", Rectangle<int> ((int) a.getX() + 112, (int) a.getY() + 6, 100, 14), Justification::centredLeft, false);
         // rechts: Tempo und Stimmen
         g.setColour (Col::text);
-        g.setFont (F (12.0f));
-        g.drawText (String (proc.hostBpm.load(), 1) + " BPM", Rectangle<int> ((int) a.getRight() - 120, (int) a.getY() + 2, 120, 16), Justification::centredRight, false);
-        g.setColour (Col::textDim);
-        g.drawText ("VOICES " + String (proc.voicesInUse.load()) + " / " + String ((int) std::lround (proc.apvts.getRawParameterValue ("v_poly")->load())),
-                    Rectangle<int> ((int) a.getRight() - 120, (int) a.getY() + 20, 120, 16), Justification::centredRight, false);
+        g.setFont (F (11.0f));
+        g.drawText (String (proc.hostBpm.load(), 1) + " BPM   VOICES " + String (proc.voicesInUse.load()) + " / " + String ((int) std::lround (proc.apvts.getRawParameterValue ("v_poly")->load())),
+                    Rectangle<int> ((int) a.getRight() - 170, (int) a.getY() + 4, 170, 16), Justification::centredRight, false);
 
         g.setColour (Col::lcdLine);
         g.drawLine (a.getX(), a.getY() + 60.0f, a.getRight(), a.getY() + 60.0f);
@@ -304,6 +302,151 @@ private:
 };
 
 //==============================================================================
+// Preset-Leiste im Display: blaettern, Menue, Speichern, Loeschen
+class PresetBar : public Component
+{
+public:
+    std::function<void (const String&, const String&)> show;
+    explicit PresetBar (TheOneProcessor& p) : proc (p)
+    {
+        for (auto* b : { &prev, &next, &name, &save, &del }) addAndMakeVisible (b);
+        name.setColour (TextButton::buttonColourId, Colour (0xff0d0e11));
+        name.setColour (TextButton::textColourOffId, Col::text);
+        prev.onClick = [this] { step (-1); };
+        next.onClick = [this] { step (1); };
+        name.onClick = [this] { openMenu(); };
+        save.onClick = [this] { askSave(); };
+        del.onClick = [this] { askDelete(); };
+        refresh();
+    }
+    void resized() override
+    {
+        auto r = getLocalBounds();
+        prev.setBounds (r.removeFromLeft (24));
+        r.removeFromLeft (3);
+        del.setBounds (r.removeFromRight (40));
+        r.removeFromRight (3);
+        save.setBounds (r.removeFromRight (48));
+        r.removeFromRight (3);
+        next.setBounds (r.removeFromRight (24));
+        r.removeFromRight (3);
+        name.setBounds (r);
+    }
+    void refresh()
+    {
+        const auto f = proc.currentPresetFile();
+        const bool user = f.existsAsFile();
+        String label = proc.currentPresetName();
+        if (user && f.getParentDirectory() != TheOneProcessor::presetRoot())
+            label = f.getParentDirectory().getRelativePathFrom (TheOneProcessor::presetRoot()) + " / " + label;
+        if (label != shown) { shown = label; name.setButtonText (label + String::fromUTF8 ("  \xe2\x96\xbe")); }
+        del.setEnabled (user);
+    }
+
+private:
+    int currentIndex (const Array<TheOneProcessor::PresetEntry>& list) const
+    {
+        const auto f = proc.currentPresetFile();
+        for (int i = 0; i < list.size(); ++i)
+            if (f.existsAsFile() ? list[i].file == f : (list[i].factory >= 0 && list[i].name == proc.currentPresetName())) return i;
+        return -1;
+    }
+    void load (const TheOneProcessor::PresetEntry& e)
+    {
+        if (proc.loadPreset (e) && show) show ("Preset", e.name);
+        refresh();
+    }
+    void step (int d)
+    {
+        const auto list = proc.scanPresets();
+        if (list.isEmpty()) return;
+        const int i = currentIndex (list);
+        load (list[((i < 0 ? 0 : i + d) % list.size() + list.size()) % list.size()]);
+    }
+    void openMenu()
+    {
+        menuList = proc.scanPresets();
+        PopupMenu m, fac;
+        std::map<String, PopupMenu> cats;
+        PopupMenu top;
+        const int cur = currentIndex (menuList);
+        for (int i = 0; i < menuList.size(); ++i)
+        {
+            const auto& e = menuList[i];
+            if (e.factory >= 0) fac.addItem (i + 1, e.name, true, i == cur);
+            else if (e.category.isEmpty()) top.addItem (i + 1, e.name, true, i == cur);
+            else cats[e.category].addItem (i + 1, e.name, true, i == cur);
+        }
+        m.addSectionHeader ("FACTORY");
+        for (int i = 0; i < menuList.size(); ++i) if (menuList[i].factory >= 0) m.addItem (i + 1, menuList[i].name, true, i == cur);
+        if (! cats.empty() || top.getNumItems() > 0)
+        {
+            m.addSectionHeader ("USER");
+            for (auto& [c, sub] : cats) m.addSubMenu (c, sub);
+            for (int i = 0; i < menuList.size(); ++i) if (menuList[i].factory < 0 && menuList[i].category.isEmpty()) m.addItem (i + 1, menuList[i].name, true, i == cur);
+        }
+        m.addSeparator();
+        m.addItem (10000, "Open preset folder");
+        m.showMenuAsync (PopupMenu::Options().withTargetComponent (&name), [this] (int r)
+        {
+            if (r == 10000) { TheOneProcessor::presetRoot().startAsProcess(); return; }
+            if (r > 0 && r <= menuList.size()) load (menuList[r - 1]);
+        });
+    }
+    void askSave()
+    {
+        const auto f = proc.currentPresetFile();
+        const bool user = f.existsAsFile();
+        String cat = user && f.getParentDirectory() != TheOneProcessor::presetRoot() ? f.getParentDirectory().getRelativePathFrom (TheOneProcessor::presetRoot()) : String();
+        auto* w = new AlertWindow ("Save preset", "Name and category (category = subfolder, may stay empty)", MessageBoxIconType::NoIcon);
+        w->addTextEditor ("name", user ? proc.currentPresetName() : String(), "Name");
+        w->addTextEditor ("cat", cat, "Category");
+        w->addButton ("Save", 1, KeyPress (KeyPress::returnKey));
+        w->addButton ("Cancel", 0, KeyPress (KeyPress::escapeKey));
+        SafePointer<PresetBar> self (this);
+        w->enterModalState (true, ModalCallbackFunction::create ([self, w] (int r)
+        {
+            if (r != 1 || self == nullptr) return;
+            const String n = w->getTextEditorContents ("name").trim(), c = w->getTextEditorContents ("cat").trim();
+            if (n.isEmpty()) return;
+            auto dir = TheOneProcessor::presetRoot();
+            if (c.isNotEmpty()) dir = dir.getChildFile (File::createLegalFileName (c));
+            const auto target = dir.getChildFile (File::createLegalFileName (n) + ".theone");
+            auto doSave = [self, n, c]
+            {
+                if (self == nullptr) return;
+                if (self->proc.savePreset (n, c) && self->show) self->show ("Preset saved", n);
+                self->refresh();
+            };
+            if (target.existsAsFile())
+                AlertWindow::showOkCancelBox (MessageBoxIconType::QuestionIcon, "Overwrite preset?", "\"" + n + "\" already exists. Replace it?", "Replace", "Cancel", nullptr,
+                                              ModalCallbackFunction::create ([doSave] (int ok) { if (ok == 1) doSave(); }));
+            else doSave();
+        }), true);
+    }
+    void askDelete()
+    {
+        const auto f = proc.currentPresetFile();
+        if (! f.existsAsFile()) return;
+        SafePointer<PresetBar> self (this);
+        AlertWindow::showOkCancelBox (MessageBoxIconType::WarningIcon, "Delete preset?", "\"" + f.getFileNameWithoutExtension() + "\" will be moved to the trash.", "Delete", "Cancel", nullptr,
+            ModalCallbackFunction::create ([self, f] (int ok)
+            {
+                if (ok != 1 || self == nullptr) return;
+                if (! f.moveToTrash()) f.deleteFile();
+                self->proc.apvts.state.setProperty ("presetFile", "", nullptr);
+                self->proc.apvts.state.setProperty ("presetName", "Untitled", nullptr);
+                self->refresh();
+            }));
+    }
+
+    TheOneProcessor& proc;
+    TextButton prev { "<" }, next { ">" }, name, save { "SAVE" }, del { "DEL" };
+    Array<TheOneProcessor::PresetEntry> menuList;
+    String shown;
+};
+
+//==============================================================================
 struct Mod { String title; Rectangle<int> r; Colour acc; };
 namespace Acc
 {
@@ -335,6 +478,9 @@ public:
         ox = 0; oy = 0; cur = Acc::osc;
         K ("c_bend", "BEND", 162, 754, 50);
         addAndMakeVisible (lcd);
+        addAndMakeVisible (presets);
+        presets.setBounds (852, 70, 374, 24);
+        presets.show = [this] (const String& n, const String& v) { lcd.setReadout (n, v); };
         lcd.setBounds (838, 26, 394, 310);
         addAndMakeVisible (pitchWheel); addAndMakeVisible (modWheel);
         pitchWheel.setBounds (50, 750, 50, 94);
@@ -351,7 +497,7 @@ public:
         start = std::make_unique<StartScreen> (proc);
         addChildComponent (*start);
         start->setBounds (0, 0, kW0, kH0);
-        start->onPick = [this] (int i) { proc.setCurrentProgram (i); if (progBox) progBox->setSelectedId (i + 1, dontSendNotification); showStart (false); };
+        start->onPick = [this] (int i) { proc.setCurrentProgram (i); presets.refresh(); showStart (false); };
         start->onClose = [this] { showStart (false); };
         if (StartScreen::shouldShow()) showStart (true);
     }
@@ -654,20 +800,15 @@ public:
         const bool standalone = proc.wrapperType == AudioProcessor::wrapperType_Standalone;
         K ("out_vol", "VOLUME", standalone ? 6 : 36, 20, 88, true);
         if (standalone) K ("out_tempo", "TEMPO", 106, 40, 44);
-        progBox = new ComboBox();
-        owned.add (progBox); addAndMakeVisible (progBox);
-        for (int i = 0; i < proc.getNumPrograms(); ++i) progBox->addItem (proc.getProgramName (i), i + 1);
-        progBox->setSelectedId (proc.getCurrentProgram() + 1, dontSendNotification);
-        progBox->setBounds (ox + 10, oy + 148, 140, 22);
-        progBox->onChange = [this] { proc.setCurrentProgram (progBox->getSelectedId() - 1); };
+
         auto* st = new TextButton ("START SCREEN");
         owned.add (st); addAndMakeVisible (st);
-        st->setBounds (ox + 10, oy + 178, 140, 24);
+        st->setBounds (ox + 10, oy + 150, 140, 28);
         st->onClick = [this] { showStart (true); };
         auto* pan = new TextButton ("PANIC");
         owned.add (pan); addAndMakeVisible (pan);
         pan->setColour (TextButton::textColourOffId, Colour (0xffff1f3f));
-        pan->setBounds (ox + 10, oy + 208, 140, 24);
+        pan->setBounds (ox + 10, oy + 188, 140, 28);
         pan->onClick = [this] { proc.panic(); };
 
         // Step-Sequencer (Metropolis-Prinzip), 16 Stufen
@@ -768,6 +909,7 @@ public:
             }
         }
         syncFilterKnobs();
+        presets.refresh();
         { const uint64_t lo = proc.genLo.load(), hi = proc.genHi.load(); if (lo != lastGenLo || hi != lastGenHi) { lastGenLo = lo; lastGenHi = hi; keys.repaint(); } }
         repaint (1430, 484, 720, 40);
         if (! svfCut->slider.isMouseButtonDown() && ! ladCut->slider.isMouseButtonDown())
@@ -869,6 +1011,7 @@ private:
     TheOneLook look;
     ShowFn show;
     LcdView lcd;
+    PresetBar presets { proc };
     KeyboardView keys;
     WheelCtl pitchWheel, modWheel;
     OwnedArray<Component> owned;
@@ -878,7 +1021,6 @@ private:
     std::vector<FxUI> fx;
     KnobCtl *svfCut = nullptr, *ladCut = nullptr, *fEg = nullptr, *fLfo = nullptr, *fFm = nullptr;
     LedToggle *modSvf = nullptr, *modLad = nullptr;
-    ComboBox* progBox = nullptr;
     std::unique_ptr<StartScreen> start;
     int stageX[TO::kSeqSteps] {};
     int lastSeqStage = -2;

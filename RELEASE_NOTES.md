@@ -1,5 +1,12 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v1.5.0
+- Presets: save, load and step through your own sounds from the bar at the top of the display (< / >, menu, SAVE, DEL)
+- A preset stores everything: all controls, every sequencer step and the learned chord
+- Categories as subfolders; files (.theone) in Music / Dani Koenig / The One / Presets, usable in every DAW
+- Factory programs are part of the preset list (START PROGRAM in OUTPUT removed)
+- Manuals updated
+
 ### New in v1.4.5
 - Sequencer follows the DAW transport: with the DAW stopped it runs on its own, when the DAW plays it starts at step 1, locks to the DAW grid and stops when the DAW stops
 - Keyboard shows the notes the synth plays: your key bright, chord memory and sequencer notes in a softer orange

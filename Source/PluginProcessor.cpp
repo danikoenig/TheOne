@@ -189,6 +189,8 @@ void TheOneProcessor::setCurrentProgram (int idx)
     for (auto& kv : programs()[(size_t) idx].v)
         if (auto* rp = apvts.getParameter (kv.first))
             rp->setValueNotifyingHost (rp->convertTo0to1 (kv.second));
+    apvts.state.setProperty ("presetName", String (programs()[(size_t) idx].name), nullptr);
+    apvts.state.setProperty ("presetFile", "", nullptr);
 }
 
 void TheOneProcessor::panic()
@@ -541,6 +543,72 @@ void TheOneProcessor::setStateInformation (const void* data, int size)
             // Learn nie aktiv laden
             if (auto* p = apvts.getParameter ("v_learn")) p->setValueNotifyingHost (0.0f);
         }
+}
+
+//==============================================================================
+File TheOneProcessor::presetRoot()
+{
+    auto d = File::getSpecialLocation (File::userMusicDirectory).getChildFile ("Dani Koenig").getChildFile ("The One").getChildFile ("Presets");
+    d.createDirectory();
+    return d;
+}
+
+Array<TheOneProcessor::PresetEntry> TheOneProcessor::scanPresets() const
+{
+    Array<PresetEntry> out;
+    for (int i = 0; i < (int) programs().size(); ++i)
+        out.add ({ String (programs()[(size_t) i].name), "Factory", File(), i });
+    const auto root = presetRoot();
+    Array<File> files = root.findChildFiles (File::findFiles, true, "*.theone");
+    Array<PresetEntry> user;
+    for (auto& f : files)
+    {
+        const auto parent = f.getParentDirectory();
+        user.add ({ f.getFileNameWithoutExtension(), parent == root ? String() : parent.getRelativePathFrom (root), f, -1 });
+    }
+    std::sort (user.begin(), user.end(), [] (const PresetEntry& a, const PresetEntry& b)
+               { return a.category != b.category ? a.category.compareIgnoreCase (b.category) < 0 : a.name.compareIgnoreCase (b.name) < 0; });
+    out.addArray (user);
+    return out;
+}
+
+bool TheOneProcessor::savePreset (const String& name, const String& category)
+{
+    const auto clean = File::createLegalFileName (name.trim());
+    if (clean.isEmpty()) return false;
+    auto dir = presetRoot();
+    if (category.trim().isNotEmpty()) dir = dir.getChildFile (File::createLegalFileName (category.trim()));
+    dir.createDirectory();
+    const auto f = dir.getChildFile (clean + ".theone");
+    apvts.state.setProperty ("presetName", clean, nullptr);
+    apvts.state.setProperty ("presetFile", f.getFullPathName(), nullptr);
+    auto state = apvts.copyState();
+    state.setProperty ("chord", chordToString(), nullptr);
+    state.removeProperty ("presetFile", nullptr);
+    if (auto xml = state.createXml()) return xml->writeTo (f);
+    return false;
+}
+
+bool TheOneProcessor::loadPreset (const PresetEntry& e)
+{
+    if (e.factory >= 0)
+    {
+        setCurrentProgram (e.factory);
+        apvts.state.setProperty ("presetName", e.name, nullptr);
+        apvts.state.setProperty ("presetFile", "", nullptr);
+        return true;
+    }
+    auto xml = XmlDocument::parse (e.file);
+    if (xml == nullptr || ! xml->hasTagName (apvts.state.getType())) return false;
+    auto vt = ValueTree::fromXml (*xml);
+    const float tempo = apvts.getRawParameterValue ("out_tempo")->load();
+    apvts.replaceState (vt);
+    if (vt.hasProperty ("chord")) setChordFromString (vt.getProperty ("chord").toString());
+    if (auto* p = apvts.getParameter ("v_learn")) p->setValueNotifyingHost (0.0f);
+    if (auto* p = apvts.getParameter ("out_tempo")) p->setValueNotifyingHost (p->convertTo0to1 (tempo));   // Tempo gehoert nicht zum Sound
+    apvts.state.setProperty ("presetName", e.name, nullptr);
+    apvts.state.setProperty ("presetFile", e.file.getFullPathName(), nullptr);
+    return true;
 }
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new TheOneProcessor(); }

@@ -56,6 +56,15 @@ public:
     void clearChord();
     void panic();   // Message-Thread: alles stumm, Hold aus
 
+    // ---- Presets (Message-Thread). Dateien *.theone im Ordner Music/Dani Koenig/The One/Presets, Unterordner = Kategorie
+    struct PresetEntry { juce::String name, category; juce::File file; int factory = -1; };
+    static juce::File presetRoot();
+    juce::Array<PresetEntry> scanPresets() const;
+    bool savePreset (const juce::String& name, const juce::String& category);
+    bool loadPreset (const PresetEntry&);
+    juce::String currentPresetName() const { return apvts.state.getProperty ("presetName", "01 - Init - Saw").toString(); }
+    juce::File currentPresetFile() const { return juce::File (apvts.state.getProperty ("presetFile", "").toString()); }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout (const std::vector<TO::PDef>&);
     void applyChord (const std::vector<int>&);

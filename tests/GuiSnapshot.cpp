@@ -139,6 +139,24 @@ int main (int argc, char** argv)
         printf ("click variant %d: change %.4f steady %.4f\n", variant, atChange, steady);
     }
 
+    // Preset-Test: speichern, aendern, laden
+    {
+        TheOneProcessor q;
+        q.prepareToPlay (48000, 512);
+        auto qs = [&] (const char* id, float v) { if (auto* a = q.apvts.getParameter (id)) a->setValueNotifyingHost (a->convertTo0to1 (v)); };
+        auto qg = [&] (const char* id) { return q.apvts.getRawParameterValue (id)->load(); };
+        qs ("lad_cut", 0.33f); qs ("seq_p5", 7); q.setChordFromString ("0,3,7");
+        const bool ok = q.savePreset ("Test Preset", "Bass");
+        qs ("lad_cut", 0.9f); qs ("seq_p5", 0); q.setChordFromString ("0,4");
+        auto list = q.scanPresets(); int found = -1;
+        for (int i = 0; i < list.size(); ++i) if (list[i].name == "Test Preset") found = i;
+        const bool ld = found >= 0 && q.loadPreset (list[found]);
+        printf ("preset: saved %d found %d (cat '%s') loaded %d cut %.2f seq_p5 %.0f chord %s name %s count %d\n", ok, found, found >= 0 ? list[found].category.toRawUTF8() : "", ld,
+                qg ("lad_cut"), qg ("seq_p5"), q.chordToString().toRawUTF8(), q.currentPresetName().toRawUTF8(), list.size());
+        if (found >= 0) list[found].file.deleteFile();
+        TheOneProcessor::presetRoot().getChildFile ("Bass").deleteFile();
+    }
+
     // Transport-Test: Sequencer folgt Start/Stop der DAW
     {
         TheOneProcessor q;

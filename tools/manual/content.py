@@ -89,6 +89,13 @@ CONTENT = {
     ("DAW TRANSPORT", "With the DAW stopped the sequencer runs on its own. When the DAW plays, it starts at step 1 with the DAW, locks to its grid and stops when the DAW stops."),
     ("Own plugin", "The same sequencer is available as the separate plugin Grinder."),
   ]),
+  ("#4fb8ee", "PRESETS (top of the display)", [
+    ("< / >", "Steps through all presets: the five factory programs first, then your own."),
+    ("Preset name", "Click for the menu: FACTORY, your presets sorted by category, and Open preset folder."),
+    ("SAVE", "Saves everything: all controls, every sequencer step and the learned chord. Category = subfolder, may stay empty."),
+    ("DEL", "Moves your preset to the trash. Factory programs cannot be deleted."),
+    ("Folder", "Music / Dani Koenig / The One / Presets. Files end in .theone and work in every DAW and the standalone app."),
+  ]),
  ],
  "recipes": [
    ("Fat bass", "OSC 1 saw 16', OSC 2 saw 8' with BEAT 0.5, SUB on. Ladder 24 dB, cutoff 30 %, EG amount 60 %, short decay. MONO and GLIDE for slides."),
@@ -98,7 +105,7 @@ CONTENT = {
    ("Self-playing line", "SEQ ON and LATCH. Choose a rate, set a few steps up and down, switch SLIDE on for acid movement."),
  ],
  "tips": [
-   "There are no presets. Save your sounds as DAW presets or as part of your project.",
+   "Save your own sounds with SAVE in the display. The DAW also stores everything in the project.",
    "Every control can be automated.",
    "Resonance and FM can get loud: keep MASTER VOLUME and your DAW meters in view.",
    "The tempo knob in the output section is only used when the DAW sends no tempo.",
@@ -188,6 +195,13 @@ CONTENT = {
     ("DAW-TRANSPORT", "Bei gestoppter DAW läuft der Sequencer frei. Läuft die DAW, startet er mit ihr bei Step 1, rastet auf ihr Raster ein und stoppt, wenn die DAW stoppt."),
     ("Eigenes Plugin", "Derselbe Sequencer gibt es als separates Plugin: Grinder."),
   ]),
+  ("#4fb8ee", "PRESETS (oben im Display)", [
+    ("< / >", "Blättert durch alle Presets: zuerst die fünf Werksprogramme, dann deine eigenen."),
+    ("Preset-Name", "Klick öffnet das Menü: FACTORY, deine Presets nach Kategorie und Open preset folder."),
+    ("SAVE", "Speichert alles: alle Regler, jeden Sequencer-Step und den gelernten Akkord. Kategorie = Unterordner, darf leer bleiben."),
+    ("DEL", "Legt dein Preset in den Papierkorb. Werksprogramme lassen sich nicht löschen."),
+    ("Ordner", "Musik / Dani Koenig / The One / Presets. Die Dateien enden auf .theone und funktionieren in jeder DAW und in der Standalone-App."),
+  ]),
  ],
  "recipes": [
    ("Fetter Bass", "OSC 1 Saw 16', OSC 2 Saw 8' mit BEAT 0,5, SUB an. Ladder 24 dB, Cutoff 30 %, EG Amount 60 %, kurzer Decay. MONO und GLIDE für Slides."),
@@ -197,7 +211,7 @@ CONTENT = {
    ("Selbstspielende Linie", "SEQ ON und LATCH. Rate wählen, ein paar Steps hoch und runter, SLIDE für Acid-Bewegung."),
  ],
  "tips": [
-   "Es gibt keine Presets. Speichere deine Sounds als DAW-Preset oder im Projekt.",
+   "Eigene Sounds speicherst du mit SAVE im Display. Die DAW speichert zusätzlich alles im Projekt.",
    "Jeder Regler lässt sich automatisieren.",
    "Resonanz und FM können laut werden: Behalte MASTER VOLUME und die Pegelanzeigen der DAW im Blick.",
    "Der Tempo-Regler im Output-Bereich gilt nur, wenn die DAW kein Tempo liefert.",
