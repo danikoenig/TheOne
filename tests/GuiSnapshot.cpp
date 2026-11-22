@@ -5,6 +5,13 @@
 #include <cmath>
 using namespace juce;
 
+struct TestPlayHead : AudioPlayHead
+{
+    bool playing = false; double ppq = 0;
+    Optional<PositionInfo> getPosition() const override
+    { PositionInfo p; p.setBpm (120.0); p.setIsPlaying (playing); p.setPpqPosition (ppq); return p; }
+};
+
 int main (int argc, char** argv)
 {
     ScopedJuceInitialiser_GUI init;
@@ -132,6 +139,25 @@ int main (int argc, char** argv)
         printf ("click variant %d: change %.4f steady %.4f\n", variant, atChange, steady);
     }
 
+    // Transport-Test: Sequencer folgt Start/Stop der DAW
+    {
+        TheOneProcessor q;
+        TestPlayHead tp;
+        q.setPlayHead (&tp);
+        q.setPlayConfigDetails (0, 2, 48000, 512);
+        q.prepareToPlay (48000, 512);
+        auto qs = [&] (const char* id, float v) { if (auto* a = q.apvts.getParameter (id)) a->setValueNotifyingHost (a->convertTo0to1 (v)); };
+        qs ("seq_on", 1); qs ("seq_latch", 1);
+        AudioBuffer<float> b (2, 512); MidiBuffer m;
+        auto run = [&] (int blocks) { float pk = 0; for (int i = 0; i < blocks; ++i) { m.clear(); b.clear(); q.processBlock (b, m); if (tp.playing) tp.ppq += 512.0 / 48000.0 * 2.0; pk = jmax (pk, b.getMagnitude (0, 512)); } return pk; };
+        q.keyboardState.noteOn (1, 48, 1.0f); run (2); q.keyboardState.noteOff (1, 48, 0.0f);
+        const float free = run (60); const int s1 = q.seqStage.load();
+        tp.playing = true; tp.ppq = 0; const float playA = run (60); const int s2 = q.seqStage.load();
+        tp.playing = false; run (2); const float stopped = run (60); const int s3 = q.seqStage.load();
+        tp.playing = true; tp.ppq = 0; const float playB = run (60); const int s4 = q.seqStage.load();
+        printf ("transport: free %.3f stage %d | play %.3f stage %d | stop %.5f stage %d | play again %.3f stage %d\n", free, s1, playA, s2, stopped, s3, playB, s4);
+    }
+
     // Bass-Demo (WAV zum Abhoeren)
     {
         TheOneProcessor q;
@@ -167,7 +193,7 @@ int main (int argc, char** argv)
     // Zustand: Akkord, 3 Oszillatoren, Effekte, damit das Bild etwas zeigt
     auto set = [&] (const char* id, float v) { if (auto* q = p.apvts.getParameter (id)) q->setValueNotifyingHost (q->convertTo0to1 (v)); else printf ("unknown %s\n", id); };
     set ("mix_lvl1", 0.6f); set ("mix_lvl2", 0.5f); set ("osc2_beat", 0.5f); set ("osc3_beat", -0.6f); set ("osc2_wave", 0); set ("osc2_angle", 0.4f);
-    set ("seq_on", 1); set ("seq_sl3", 1); set ("seq_ac1", 1); set ("seq_ac5", 1); set ("seq_o6", 1); set ("seq_p6", 7); set ("fx1_type", 1); set ("fx2_type", 7); set ("fx3_type", 14);
+    set ("seq_on", 0); set ("seq_sl3", 1); set ("seq_ac1", 1); set ("seq_ac5", 1); set ("seq_o6", 1); set ("seq_p6", 7); set ("fx1_type", 1); set ("fx2_type", 7); set ("fx3_type", 14);
     set ("v_chord", 1); set ("v_unison", 1);
     p.setChordFromString ("0,4,7,12");
 
@@ -183,7 +209,7 @@ int main (int argc, char** argv)
         p.processBlock (buf, midi);
         peak = jmax (peak, buf.getMagnitude (0, 512));
     }
-    printf ("peak %.3f voices %d\n", peak, p.voicesInUse.load());
+    printf ("peak %.3f voices %d gen %llx %llx\n", peak, p.voicesInUse.load(), (unsigned long long) p.genLo.load(), (unsigned long long) p.genHi.load());
 
     {
         PropertiesFile::Options o; o.applicationName = "The One"; o.folderName = "Dani Koenig"; o.filenameSuffix = ".settings"; o.osxLibrarySubFolder = "Application Support";

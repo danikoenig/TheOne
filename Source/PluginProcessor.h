@@ -49,6 +49,7 @@ public:
     std::atomic<int> learnCount { 0 };
     std::atomic<float> outLevel { 0.0f };
     std::atomic<int> seqStage { -1 };   // laufende Stufe fuer die Anzeige
+    std::atomic<uint64_t> genLo { 0 }, genHi { 0 };   // Noten, die der Synth gerade spielt (Akkorde, Sequencer)
 
     void setChordFromString (const juce::String&);
     juce::String chordToString() const;
@@ -60,7 +61,8 @@ private:
     void applyChord (const std::vector<int>&);
 
     std::atomic<bool> panicFlag { false };
-    void runSequencer (juce::MidiBuffer&, int numSamples, double bpm, bool learn);
+    void runSequencer (juce::MidiBuffer&, int numSamples, double bpm, bool learn, bool hostPlaying, double ppq);
+    bool prevHostPlaying = false, seqHadRoot = false;
     juce::Array<int> seqKeys;
     bool seqRunning = false;
     int seqRoot = 60, seqStageIdx = 0, seqSounding = -1;

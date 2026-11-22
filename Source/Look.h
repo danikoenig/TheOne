@@ -134,6 +134,7 @@ class KeyboardView : public juce::MidiKeyboardComponent
 {
 public:
     KeyboardView (juce::MidiKeyboardState& s) : juce::MidiKeyboardComponent (s, juce::MidiKeyboardComponent::horizontalKeyboard) {}
+    std::function<bool (int)> generated;   // vom Synth gespielte Noten (Akkord, Sequencer), schwaecher markiert
 protected:
     void drawWhiteNote (int note, juce::Graphics&, juce::Rectangle<float>, bool isDown, bool isOver, juce::Colour line, juce::Colour text) override;
     void drawBlackNote (int note, juce::Graphics&, juce::Rectangle<float>, bool isDown, bool isOver, juce::Colour fill) override;

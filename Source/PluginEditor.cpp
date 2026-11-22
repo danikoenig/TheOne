@@ -346,6 +346,7 @@ public:
         keys.setVelocity (0.8f, true);
         keys.setBounds (222, 752, 1928, 92);
         keys.setWantsKeyboardFocus (false);
+        keys.generated = [this] (int n) { const uint64_t m = n < 64 ? proc.genLo.load() : proc.genHi.load(); return ((m >> (n & 63)) & 1) != 0; };
         startTimerHz (30);
         start = std::make_unique<StartScreen> (proc);
         addChildComponent (*start);
@@ -767,6 +768,7 @@ public:
             }
         }
         syncFilterKnobs();
+        { const uint64_t lo = proc.genLo.load(), hi = proc.genHi.load(); if (lo != lastGenLo || hi != lastGenHi) { lastGenLo = lo; lastGenHi = hi; keys.repaint(); } }
         repaint (1430, 484, 720, 40);
         if (! svfCut->slider.isMouseButtonDown() && ! ladCut->slider.isMouseButtonDown())
         { lastCut[0] = (float) svfCut->slider.getValue(); lastCut[1] = (float) ladCut->slider.getValue(); }
@@ -880,6 +882,7 @@ private:
     std::unique_ptr<StartScreen> start;
     int stageX[TO::kSeqSteps] {};
     int lastSeqStage = -2;
+    uint64_t lastGenLo = 0, lastGenHi = 0;
     bool syncing = false, linkGuard = false;
     float lastCut[2] = { 0, 0 };
 };

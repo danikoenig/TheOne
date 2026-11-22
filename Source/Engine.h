@@ -80,7 +80,8 @@ public:
     void noteOff (int note);
     void allNotesOff();
     void panic();
-    void slide (int fromKey, int toKey);   // Sequencer-Slide: Stimmen gleiten ohne Neuanschlag   // sofort alles stumm, Pedal/Stack zuruecksetzen
+    void slide (int fromKey, int toKey);
+    void soundingNotes (uint64_t& lo, uint64_t& hi) const;   // gerade gespielte Noten (inkl. Akkord und Sequencer)   // Sequencer-Slide: Stimmen gleiten ohne Neuanschlag   // sofort alles stumm, Pedal/Stack zuruecksetzen
     void setPedal (bool down);
     void setBend (float v) { bend = v; }       // -1..1
     void setModWheel (float v) { modWheel = v; }

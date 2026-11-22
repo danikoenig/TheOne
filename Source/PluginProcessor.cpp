@@ -200,9 +200,11 @@ void TheOneProcessor::panic()
 
 //==============================================================================
 // Step-Sequencer: gehaltene Taste transponiert die Sequenz (Grundton C3 = 60)
-void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm, bool learn)
+void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm, bool learn, bool hostPlaying, double ppq)
 {
     using namespace TO;
+    const bool transStart = hostPlaying && ! prevHostPlaying, transStop = ! hostPlaying && prevHostPlaying;
+    prevHostPlaying = hostPlaying;
     const bool on = P[SEQ0 + SQ_ON] > 0.5f && ! learn;
     if (! on)
     {
@@ -327,6 +329,17 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
     };
 
     if (seqStageIdx >= len) seqStageIdx = nextStage (seqStageIdx % len);
+    const double rateBeats = (double) kSeqBeats[jlimit (0, kSeqRates - 1, (int) std::lround (P[SEQ0 + SQ_RATE]))];
+
+    // DAW-Transport: Stop haelt den Sequencer an, Start startet ihn neu ab Step 1 (im Takt der DAW)
+    if (transStop && seqRunning) { noteOffAt (0); seqRunning = false; seqOffIn = -1.0; }
+    if (transStart && (seqRunning || (latch ? seqHadRoot : ! seqKeys.isEmpty())))
+    {
+        noteOffAt (0);
+        seqRunning = true; seqStageIdx = firstStage(); seqOffIn = -1.0; seqPrevSlide = false;
+        seqToPulse = pulse;
+        firePulse (0);
+    }
     for (const auto meta : midi)
     {
         const auto m = meta.getMessage();
@@ -341,9 +354,19 @@ void TheOneProcessor::runSequencer (MidiBuffer& midi, int numSamples, double bpm
             seqVel = m.getFloatVelocity();
             const bool wasRunning = seqRunning;
             seqRoot = n;   // Taste = Grundton der Sequenz
+            seqHadRoot = true;
             if (! wasRunning)
             {
-                seqRunning = true; seqStageIdx = firstStage(); seqToPulse = pulse; seqOffIn = -1.0; seqPrevSlide = false;
+                seqRunning = true; seqStageIdx = firstStage(); seqOffIn = -1.0; seqPrevSlide = false;
+                seqToPulse = pulse;
+                if (hostPlaying && ppq >= 0.0)
+                {
+                    // laeuft die DAW, rastet der naechste Step auf das Raster der DAW ein
+                    const double ppqAt = ppq + (double) pos / sampleRate * bpm / 60.0;
+                    const double fr = std::fmod (ppqAt, rateBeats);
+                    const double rest = (rateBeats - fr) * 60.0 / jmax (20.0, bpm) * sampleRate;
+                    if (rest > 8.0) seqToPulse = rest;
+                }
                 firePulse (pos);
             }
         }
@@ -374,9 +397,15 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     }
 
     double bpm = P[(size_t) TO::OUT0 + TO::OUT_TEMPO];
+    bool hostPlaying = false;
+    double ppq = -1.0;
     if (auto* ph = getPlayHead())
         if (auto pos = ph->getPosition())
+        {
             if (auto b = pos->getBpm()) bpm = *b;
+            hostPlaying = pos->getIsPlaying();
+            if (auto q = pos->getPpqPosition()) ppq = *q;
+        }
     hostBpm.store ((float) bpm);
 
     // Chord Learn: Flanke erkennen
@@ -400,7 +429,7 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     learnActive.store (learn);
 
     keyboardState.processNextMidiBuffer (midi, 0, numSamples, true);
-    runSequencer (midi, numSamples, bpm, learn);
+    runSequencer (midi, numSamples, bpm, learn, hostPlaying, ppq);
 
     float* L = scratch.getWritePointer (0);
     float* R = scratch.getWritePointer (1);
@@ -449,6 +478,7 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
         if (m.isAllNotesOff() || m.isAllSoundOff()) { synth.allNotesOff(); down.fill (false); }
     }
     renderTo (numSamples);
+    { uint64_t lo, hi; synth.soundingNotes (lo, hi); genLo.store (lo); genHi.store (hi); }
 
     fx.process (L, R, numSamples, P.data(), bpm);
 

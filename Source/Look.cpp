@@ -348,8 +348,12 @@ void WaveView::paint (Graphics& g)
 }
 
 //==============================================================================
-void KeyboardView::drawWhiteNote (int, Graphics& g, Rectangle<float> a, bool isDown, bool isOver, Colour lineColour, Colour)
+void KeyboardView::drawWhiteNote (int note, Graphics& g, Rectangle<float> a, bool isDown, bool isOver, Colour lineColour, Colour)
 {
+    const bool gen = ! isDown && generated && generated (note);
+    if (gen)
+        g.setGradientFill (ColourGradient (Colour (0xffcfd0cc).interpolatedWith (Col::led, 0.45f), 0, a.getY(), Colour (0xffa9aaa6).interpolatedWith (Col::led, 0.4f), 0, a.getBottom(), false));
+    else
     g.setGradientFill (isDown ? ColourGradient (Col::led.brighter (0.2f), 0, a.getY(), Col::led.darker (0.35f), 0, a.getBottom(), false)
                               : ColourGradient (Colour (0xffcfd0cc), 0, a.getY(), isOver ? Colour (0xffbdbeba) : Colour (0xffa9aaa6), 0, a.getBottom(), false));
     g.fillRect (a);
@@ -358,11 +362,14 @@ void KeyboardView::drawWhiteNote (int, Graphics& g, Rectangle<float> a, bool isD
     g.setColour (Colours::black.withAlpha (0.18f));
     g.fillRect (a.withTop (a.getBottom() - 4.0f));
 }
-void KeyboardView::drawBlackNote (int, Graphics& g, Rectangle<float> a, bool isDown, bool isOver, Colour)
+void KeyboardView::drawBlackNote (int note, Graphics& g, Rectangle<float> a, bool isDown, bool isOver, Colour)
 {
     auto k = a.reduced (0.5f, 0.0f);
     g.setColour (Colours::black);
     g.fillRect (k.expanded (1.0f, 0.0f).withTrimmedTop (-1.0f));
+    const bool gen = ! isDown && generated && generated (note);
+    if (gen) g.setGradientFill (ColourGradient (Col::led.darker (0.6f), 0, k.getY(), Col::led.darker (1.4f), 0, k.getBottom(), false));
+    else
     g.setGradientFill (isDown ? ColourGradient (Col::led, 0, k.getY(), Col::led.darker (0.5f), 0, k.getBottom(), false)
                               : ColourGradient (isOver ? Colour (0xff3a3e47) : Colour (0xff33363e), 0, k.getY(), Colour (0xff16171b), 0, k.getBottom(), false));
     g.fillRect (k);

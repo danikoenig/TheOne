@@ -322,6 +322,18 @@ void Synth::slide (int fromKey, int toKey)
     lastNote = (float) toKey;
 }
 
+void Synth::soundingNotes (uint64_t& lo, uint64_t& hi) const
+{
+    lo = hi = 0;
+    for (const auto& v : voices)
+    {
+        if (! v.active || ! (v.gate || v.sustained)) continue;
+        const int n = v.pending ? v.pend.note : (int) std::lround (v.target);
+        if (n < 0 || n > 127) continue;
+        if (n < 64) lo |= (uint64_t) 1 << n; else hi |= (uint64_t) 1 << (n - 64);
+    }
+}
+
 void Synth::allNotesOff()
 {
     for (auto& v : voices) if (v.active) releaseVoice (v);
