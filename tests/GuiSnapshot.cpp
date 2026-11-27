@@ -139,6 +139,35 @@ int main (int argc, char** argv)
         printf ("click variant %d: change %.4f steady %.4f\n", variant, atChange, steady);
     }
 
+    // Akkord-Test: Typen, Inversion, Voicing, Bass
+    {
+        auto pr = [] (const char* label, std::vector<int> v) { String s; for (int x : v) s << x << " "; printf ("chord %-22s %s\n", label, s.toRawUTF8()); };
+        pr ("Minor 9", TheOneProcessor::buildChord ({ 0 }, 10, 0, 0, 0));
+        pr ("Minor 9 inv1", TheOneProcessor::buildChord ({ 0 }, 10, 1, 0, 0));
+        pr ("Major 7 open", TheOneProcessor::buildChord ({ 0 }, 3, 0, 1, 0));
+        pr ("Major 7 drop2", TheOneProcessor::buildChord ({ 0 }, 3, 0, 2, 0));
+        pr ("Major 7 wide", TheOneProcessor::buildChord ({ 0 }, 3, 0, 3, 0));
+        pr ("Minor bass -1", TheOneProcessor::buildChord ({ 0 }, 2, 0, 0, 1));
+        pr ("Learned 0,3,7 bass -2", TheOneProcessor::buildChord ({ 0, 3, 7 }, 0, 0, 0, 2));
+    }
+    // Silent-Learn-Test: SILENT allein lernt ohne Ton
+    {
+        TheOneProcessor q;
+        q.setPlayConfigDetails (0, 2, 48000, 512);
+        q.prepareToPlay (48000, 512);
+        auto qs = [&] (const char* id, float v) { if (auto* a = q.apvts.getParameter (id)) a->setValueNotifyingHost (a->convertTo0to1 (v)); };
+        AudioBuffer<float> b (2, 512); MidiBuffer m;
+        qs ("v_silent", 1);
+        m.clear(); b.clear(); q.processBlock (b, m);
+        m.addEvent (MidiMessage::noteOn (1, 57, 0.8f), 0); m.addEvent (MidiMessage::noteOn (1, 60, 0.8f), 10); m.addEvent (MidiMessage::noteOn (1, 64, 0.8f), 20);
+        float pk = 0; b.clear(); q.processBlock (b, m); pk = b.getMagnitude (0, 512);
+        for (int i = 0; i < 20; ++i) { m.clear(); b.clear(); q.processBlock (b, m); pk = jmax (pk, b.getMagnitude (0, 512)); }
+        m.clear(); for (int k : { 57, 60, 64 }) m.addEvent (MidiMessage::noteOff (1, k), 0);
+        b.clear(); q.processBlock (b, m);
+        qs ("v_silent", 0); m.clear(); b.clear(); q.processBlock (b, m);
+        printf ("silent learn: peak while learning %.5f learned %s\n", pk, q.chordToString().toRawUTF8());
+    }
+
     // Clip-Test: Bass mit CLIP 0 / 50 / 100 %
     for (float cl : { 0.0f, 0.5f, 1.0f })
     {

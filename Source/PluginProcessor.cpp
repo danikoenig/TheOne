@@ -110,6 +110,37 @@ void TheOneProcessor::applyChord (const std::vector<int>& iv)
     }
 }
 
+std::vector<int> TheOneProcessor::buildChord (const std::vector<int>& learned, int type, int inv, int voicing, int bass)
+{
+    static const std::vector<int> types[19] = {
+        {}, { 0, 4, 7 }, { 0, 3, 7 }, { 0, 4, 7, 11 }, { 0, 3, 7, 10 }, { 0, 4, 7, 10 }, { 0, 4, 7, 9 }, { 0, 3, 7, 9 },
+        { 0, 4, 7, 14 }, { 0, 4, 7, 11, 14 }, { 0, 3, 7, 10, 14 }, { 0, 4, 7, 10, 14 }, { 0, 2, 7 }, { 0, 5, 7 },
+        { 0, 3, 6 }, { 0, 3, 6, 9 }, { 0, 3, 6, 10 }, { 0, 4, 8 }, { 0, 7, 12 } };
+    std::vector<int> n = (type <= 0 || type > 18) ? learned : types[type];
+    if (n.empty()) n.push_back (0);
+    std::sort (n.begin(), n.end());
+    n.erase (std::unique (n.begin(), n.end()), n.end());
+    const int cnt = (int) n.size();
+    // Inversion: die untersten Toene eine Oktave nach oben
+    for (int i = 0; i < std::min (inv, cnt - 1); ++i) n[(size_t) i] += 12;
+    std::sort (n.begin(), n.end());
+    // Voicing
+    if (cnt >= 3)
+    {
+        if (voicing == 1)      for (int i = 1; i < cnt; i += 2) n[(size_t) i] += 12;                // Open: jeder zweite Ton hoch
+        else if (voicing == 2) n[(size_t) cnt - 2] -= 12;                                         // Drop 2
+        else if (voicing == 3) { for (int i = 1; i < cnt; i += 2) n[(size_t) i] += 12; n[0] -= 12; }   // Wide: Open, tiefster Ton eine Oktave runter
+        std::sort (n.begin(), n.end());
+    }
+    // Bassnote unter dem Grundton der Taste
+    if (bass > 0)
+    {
+        const int b = -12 * bass;
+        if (std::find (n.begin(), n.end(), b) == n.end()) n.insert (n.begin(), b);
+    }
+    return n;
+}
+
 void TheOneProcessor::clearChord() { applyChord ({ 0 }); }
 
 String TheOneProcessor::chordToString() const
@@ -399,7 +430,20 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     if (panicFlag.exchange (false)) { seqRunning = false; seqKeys.clear(); seqSounding = -1; seqStage.store (-1); synth.panic(); down.fill (false); fx.prepare (getSampleRate() > 0 ? getSampleRate() : 48000.0); }
     {
         const SpinLock::ScopedTryLockType sl (chordLock);
-        if (sl.isLocked() && chordPending) { synth.setChord (pendingChord); chordPending = false; }
+        if (sl.isLocked() && chordPending) { learnedIv = pendingChord; chordPending = false; learnedDirty = true; }
+    }
+
+    {   // Akkord aus Typ (oder gelerntem Akkord), Inversion, Voicing und Bassnote
+        const int ty = (int) std::lround (P[(size_t) TO::VOI0 + TO::V_CTYPE]);
+        const int inv = (int) std::lround (P[(size_t) TO::VOI0 + TO::V_CINV]);
+        const int vo = (int) std::lround (P[(size_t) TO::VOI0 + TO::V_CVOICE]);
+        const int ba = (int) std::lround (P[(size_t) TO::VOI0 + TO::V_CBASS]);
+        const int key = ((ty * 8 + inv) * 8 + vo) * 8 + ba;
+        if (key != lastChordKey || learnedDirty)
+        {
+            synth.setChord (buildChord (learnedIv, ty, inv, vo, ba));
+            lastChordKey = key; learnedDirty = false;
+        }
     }
 
     double bpm = P[(size_t) TO::OUT0 + TO::OUT_TEMPO];
@@ -415,8 +459,9 @@ void TheOneProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midi
     hostBpm.store ((float) bpm);
 
     // Chord Learn: Flanke erkennen
-    const bool learn = P[(size_t) TO::VOI0 + TO::V_LEARN] > 0.5f;
+    // LEARN lernt hoerbar, SILENT lernt ohne Ton: beide Tasten sind eigene Lernmodi
     const bool silent = P[(size_t) TO::VOI0 + TO::V_SILENT] > 0.5f;
+    const bool learn = P[(size_t) TO::VOI0 + TO::V_LEARN] > 0.5f || silent;
     if (learn && ! lastLearn) { learnNotes.clear(); learnCount.store (0); }
     if (! learn && lastLearn)
     {

@@ -30,7 +30,7 @@ enum { F_SVF_CUT, F_SVF_RES, F_SVF_MODE, F_SVF_SPACE, F_SVF_SER, F_SVF_KEY, F_SV
 enum { E_DELAY, E_ATT, E_HOLD, E_DEC, E_SUS, E_REL, E_ACURVE, E_DCURVE, E_RCURVE, E_LOOP, E_LATCH, E_SCALE, E_VEL, E_N };
 enum { L_RATE, L_RANGE, L_WAVE, L_VAR, L_POL, L_SYNC, L_TIMING, L_DELAY, L_FADE, L_RESET, L_PHASE, L_N };
 enum { X_L4DEST, X_L4AMT, X_MEDEST, X_MEAMT, X_N };
-enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD, V_CHORD, V_LEARN, V_SILENT, V_SPREAD, V_MULTI, V_N };
+enum { V_POLY, V_MONO, V_UNISON, V_UCOUNT, V_DETUNE, V_GLIDEON, V_GLIDE, V_HOLD, V_CHORD, V_LEARN, V_SILENT, V_SPREAD, V_MULTI, V_CTYPE, V_CINV, V_CVOICE, V_CBASS, V_N };
 enum { FX_TYPE, FX_MIX, FX_P1, FX_P2, FX_P3, FX_P4, FX_P5, FX_SYNC, FX_N };
 enum { OUT_VOL, OUT_TEMPO, OUT_CLIP, OUT_N };
 constexpr int kSeqSteps = 16;
@@ -241,6 +241,11 @@ inline std::vector<PDef> makeDefs()
     B ("v_silent", "Silent Learn", false);
     F ("v_spread", "Stereo Spread", 0, 1, 0.5f, dTen);
     B ("v_multi", "Multi Trigger", true);
+    C ("v_ctype", "Chord Type", { "Learned", "Major", "Minor", "Major 7", "Minor 7", "Dominant 7", "Major 6", "Minor 6", "Add 9", "Major 9",
+                                  "Minor 9", "Dominant 9", "Sus 2", "Sus 4", "Diminished", "Dim 7", "Half-dim 7", "Augmented", "Power" }, 0);
+    C ("v_cinv", "Chord Inversion", { "Root", "1st", "2nd", "3rd" }, 0);
+    C ("v_cvoice", "Chord Voicing", { "Closed", "Open", "Drop 2", "Wide" }, 0);
+    C ("v_cbass", "Chord Bass", { "Off", "-1 Oct", "-2 Oct" }, 0);
     // Effekte
     std::vector<std::string> fxNames;
     for (int t = 0; t < FX_NUM; ++t) fxNames.push_back (fxTypeName (t));

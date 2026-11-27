@@ -1,5 +1,13 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v2.0.0
+- Chord section (blue): 18 ready chord types (Major to Power) plus LEARNED, every key plays the chord transposed
+- INVERSION (Root, 1st, 2nd, 3rd) and VOICING (Closed, Open, Drop 2, Wide)
+- BASS: adds a bass note one or two octaves below the key
+- SILENT now works on its own: learn a chord without sound
+- After learning, the chord type switches to LEARNED and CHORD turns on
+- Manuals updated
+
 ### New in v1.6.0
 - CLIP: Knack clipper in OUTPUT before the volume (up to +24 dB, 4x oversampled), 0 % = clean
 - CLIP and VOLUME as two matching knobs, PANIC smaller

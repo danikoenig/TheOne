@@ -95,6 +95,12 @@ private:
     juce::SpinLock chordLock;
     bool chordPending = false;
     std::vector<int> pendingChord;
+    std::vector<int> learnedIv { 0 };      // gelernter Akkord (Audio-Thread)
+    int lastChordKey = -1;
+    bool learnedDirty = true;
+public:
+    static std::vector<int> buildChord (const std::vector<int>& learned, int type, int inv, int voicing, int bass);
+private:
     int scopeDecim = 0;
     float limState = 1.0f;
     juce::SmoothedValue<float> volS, clipS;

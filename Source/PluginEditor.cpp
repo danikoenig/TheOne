@@ -177,11 +177,11 @@ public:
     void paint (Graphics& g) override
     {
         auto r = getLocalBounds().toFloat().reduced (1.5f);
-        const bool filled = mode == filledState;
+        const bool filled = filledState < 0 ? mode != 0 : mode == filledState;
         if (filled) { g.setColour (acc); g.fillRoundedRectangle (r, 3.0f); }
-        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (labels.size() > 2 && mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
-        g.setColour (filled ? Colour (0xff17181c) : (labels.size() > 2 && mode == 1 ? acc : Col::textDim));
-        g.setFont (F (7.5f));
+        else { g.setColour (Colour (0xff121317)); g.fillRoundedRectangle (r, 3.0f); g.setColour (filledState >= 0 && labels.size() > 2 && mode == 1 ? acc.withAlpha (0.8f) : Col::textDim.withAlpha (0.5f)); g.drawRoundedRectangle (r, 3.0f, 1.0f); }
+        g.setColour (filled ? Colour (0xff17181c) : (filledState >= 0 && labels.size() > 2 && mode == 1 ? acc : Col::textDim));
+        g.setFont (F (filledState < 0 ? 9.5f : 7.5f));
         g.drawText (labels[jlimit (0, labels.size() - 1, mode)], getLocalBounds(), Justification::centred, false);
     }
     void mouseDown (const MouseEvent&) override
@@ -379,6 +379,55 @@ private:
 };
 
 //==============================================================================
+// Raster der Akkordtypen (LED + Name), gebunden an v_ctype
+class ChordGrid : public Component
+{
+public:
+    ChordGrid (AudioProcessorValueTreeState& apvts, ShowFn s, Colour a) : show (s), acc (a)
+    {
+        param = apvts.getParameter ("v_ctype");
+        att = std::make_unique<ParameterAttachment> (*param, [this] (float v) { sel = (int) std::lround (v); repaint(); });
+        att->sendInitialUpdate();
+    }
+    void paint (Graphics& g) override
+    {
+        for (int i = 0; i < 19; ++i)
+        {
+            auto c = cell (i).toFloat();
+            const bool on = i == sel;
+            if (on) { g.setColour (acc.withAlpha (0.12f)); g.fillRoundedRectangle (c.reduced (1.0f, 2.0f), 3.0f); }
+            drawLed (g, Rectangle<float> (7.0f, 7.0f).withCentre ({ c.getX() + 9.0f, c.getCentreY() }), on, acc);
+            g.setColour (on ? acc : (i == 0 ? Col::textDim : Col::text));
+            g.setFont (F (9.5f));
+            g.drawText (names[i], c.withTrimmedLeft (17.0f).toNearestInt(), Justification::centredLeft, false);
+        }
+    }
+    void mouseDown (const MouseEvent& e) override
+    {
+        for (int i = 0; i < 19; ++i)
+            if (cell (i).contains (e.getPosition()))
+            {
+                att->setValueAsCompleteGesture ((float) i);
+                if (show) show ("Chord Type", param->getCurrentValueAsText());
+                return;
+            }
+    }
+private:
+    Rectangle<int> cell (int i) const
+    {
+        const int cols = 5, cw = getWidth() / cols, ch = getHeight() / 4;
+        return { (i % cols) * cw, (i / cols) * ch, cw, ch };
+    }
+    static constexpr const char* names[19] = { "LEARNED", "Major", "Minor", "Maj 7", "Min 7", "Dom 7", "Maj 6", "Min 6", "Add 9", "Maj 9",
+                                               "Min 9", "Dom 9", "Sus 2", "Sus 4", "Dim", "Dim 7", "Half-dim", "Aug", "Power" };
+    ShowFn show;
+    Colour acc;
+    int sel = 0;
+    RangedAudioParameter* param = nullptr;
+    std::unique_ptr<ParameterAttachment> att;
+};
+
+//==============================================================================
 struct Mod { String title; Rectangle<int> r; Colour acc; };
 namespace Acc
 {
@@ -540,28 +589,37 @@ public:
         T ("n_sus", "SUSTAIN", 10, 176, 80, 16);
 
         // Stimmen
-        M ("VOICE ALLOCATION", 250, 492, 560, 134, Acc::voice);
-        K ("v_poly", "POLY", 14, 24, 48);
-        K ("v_ucount", "UNISON", 76, 24, 48);
-        K ("v_detune", "DETUNE", 138, 24, 48);
-        K ("v_spread", "SPREAD", 200, 24, 48);
-        K ("v_glide", "GLIDE", 262, 24, 48);
-        T ("v_mono", "MONO", 340, 30, 66);
-        T ("v_unison", "UNISON", 340, 54, 76);
-        T ("v_glideon", "GLIDE ON", 340, 78, 80);
-        T ("v_multi", "MULTI TRIG", 430, 30, 96);
+        M ("VOICE ALLOCATION", 250, 492, 560, 104, Acc::voice);
+        K ("v_poly", "POLY", 14, 20, 46);
+        K ("v_ucount", "UNISON", 76, 20, 46);
+        K ("v_detune", "DETUNE", 138, 20, 46);
+        K ("v_spread", "SPREAD", 200, 20, 46);
+        K ("v_glide", "GLIDE", 262, 20, 46);
+        T ("v_mono", "MONO", 340, 24, 66);
+        T ("v_unison", "UNISON", 340, 46, 76);
+        T ("v_glideon", "GLIDE ON", 340, 68, 80);
+        T ("v_multi", "MULTI TRIG", 430, 24, 96);
 
-        // Akkord
-        M ("CHORD / HOLD", 250, 636, 560, 98, Acc::voice);
-        T ("v_hold", "HOLD", 14, 34, 66, 16);
-        T ("v_chord", "CHORD", 100, 34, 72, 16);
-        T ("v_learn", "LEARN", 192, 34, 72, 16);
-        T ("v_silent", "SILENT LEARN", 284, 34, 110, 16);
+        // Akkord: Typ-Raster wie bei Akkord-Generatoren, Inversion, Voicing, Bassnote (blau)
+        M ("CHORD", 250, 606, 560, 128, Acc::fx);
+        T ("v_chord", "CHORD ON", 8, 22, 100, 16);
+        T ("v_hold", "HOLD", 8, 44, 100, 16);
+        T ("v_learn", "LEARN", 8, 66, 100, 16);
+        T ("v_silent", "SILENT", 8, 88, 100, 16);
         auto* clr = new TextButton ("CLEAR");
         owned.add (clr); addAndMakeVisible (clr);
-        clr->setBounds (ox + 420, oy + 31, 70, 22);
+        clr->setBounds (ox + 8, oy + 106, 96, 16);
         clr->onClick = [this] { proc.clearChord(); };
-        Ctext ("LEARN on, play the chord, LEARN off, CHORD on. Every key then plays the chord, transposed.", 14, 66, 9.0f);
+        auto* grid = new ChordGrid (apvts, show, cur);
+        owned.add (grid); addAndMakeVisible (grid);
+        grid->setBounds (ox + 114, oy + 18, 326, 104);
+        Ctext ("INVERSION", 448, 16, 8.5f);
+        Cb ("v_cinv", 446, 27, 106, 18);
+        Ctext ("VOICING", 448, 50, 8.5f);
+        Cb ("v_cvoice", 446, 61, 106, 18);
+        auto* bassBtn = new StepModeBtn (apvts, "v_cbass", show, cur, { "BASS OFF", "BASS -1 OCT", "BASS -2 OCT" }, -1);
+        owned.add (bassBtn); addAndMakeVisible (bassBtn);
+        bassBtn->setBounds (ox + 446, oy + 90, 106, 24);
     }
 
     void buildCenter()
@@ -833,6 +891,15 @@ public:
             }
         }
         syncFilterKnobs();
+        {   // nach Chord Learn: Typ auf LEARNED und CHORD an
+            const bool la = proc.learnActive.load();
+            if (! la && lastLearnUi)
+            {
+                if (auto* p = apvts.getParameter ("v_ctype")) p->setValueNotifyingHost (0.0f);
+                if (auto* p = apvts.getParameter ("v_chord")) p->setValueNotifyingHost (1.0f);
+            }
+            lastLearnUi = la;
+        }
         presets.refresh();
         { const uint64_t lo = proc.genLo.load(), hi = proc.genHi.load(); if (lo != lastGenLo || hi != lastGenHi) { lastGenLo = lo; lastGenHi = hi; keys.repaint(); } }
         repaint (1430, 484, 720, 40);
@@ -948,6 +1015,7 @@ private:
     int stageX[TO::kSeqSteps] {};
     int lastSeqStage = -2;
     uint64_t lastGenLo = 0, lastGenHi = 0;
+    bool lastLearnUi = false;
     bool syncing = false, linkGuard = false;
     float lastCut[2] = { 0, 0 };
 };
