@@ -554,33 +554,33 @@ public:
         for (int i = 0; i < 3; ++i)
         {
             const String s = "osc" + String (i + 1) + "_";
-            M ("OSCILLATOR " + String (i + 1), 50 + i * 204, 190, 194, 292, Acc::osc);
-            auto* wv = new WaveView (apvts, i); owned.add (wv); addAndMakeVisible (wv); wv->setBounds (ox + 8, oy + 24, 178, 60); waves.add (wv);
-            K (s + "freq", "FREQ", 8, 92, 52);
-            K (s + "beat", "BEAT", 70, 92, 52);
-            K (s + "angle", "WAVE ANGLE", 132, 92, 52);
-            K (s + "pw", "PULSE WIDTH", 8, 164, 52);
-            K (s + "mix", "MIX", 70, 164, 52);
-            K (s + "track", "TRACK", 132, 164, 52);
-            S (s + "oct", 6, 240, 130, 20, false);
-            S (s + "wave", 140, 240, 48, 20, false);
-            if (i > 0) T (s + "sync", "SYNC", 8, 268, 60, 15);
-            T (s + "reset", "PHASE RESET", 80, 268, 110, 15);
+            M ("OSCILLATOR " + String (i + 1), 50 + i * 204, 190, 194, 284, Acc::osc);
+            auto* wv = new WaveView (apvts, i); owned.add (wv); addAndMakeVisible (wv); wv->setBounds (ox + 8, oy + 22, 178, 58); waves.add (wv);
+            K (s + "freq", "FREQ", 8, 88, 52);
+            K (s + "beat", "BEAT", 70, 88, 52);
+            K (s + "angle", "WAVE ANGLE", 132, 88, 52);
+            K (s + "pw", "PULSE WIDTH", 8, 158, 52);
+            K (s + "mix", "MIX", 70, 158, 52);
+            K (s + "track", "TRACK", 132, 158, 52);
+            S (s + "oct", 6, 232, 130, 20, false);
+            S (s + "wave", 140, 232, 48, 20, false);
+            if (i > 0) T (s + "sync", "SYNC", 8, 260, 60, 15);
+            T (s + "reset", "PHASE RESET", 80, 260, 110, 15);
         }
-        M ("OSC COMMON", 662, 190, 148, 292, Acc::osc);
+        M ("OSC COMMON", 662, 190, 148, 284, Acc::osc);
         K ("c_lfo1", "LFO1>PIT", 10, 24, 48);
         K ("c_mepitch", "EG>PIT", 88, 24, 48);
-        K ("c_lfo3ang", "LFO3>ANG", 10, 92, 48);
-        K ("c_lfo3pw", "LFO3>PW", 88, 92, 48);
-        K ("c_fm", "FM AMT", 10, 160, 48);
-        K ("c_moddepth", "WHEEL VIB", 88, 160, 48);
-        Ctext ("RING MOD SOURCES", 10, 222);
-        S ("c_ringsrc", 8, 234, 132, 20, false);
-        Ctext ("FM ROUTE", 10, 257);
-        S ("c_fmroute", 8, 269, 132, 20, false);
+        K ("c_lfo3ang", "LFO3>ANG", 10, 88, 48);
+        K ("c_lfo3pw", "LFO3>PW", 88, 88, 48);
+        K ("c_fm", "FM AMT", 10, 152, 48);
+        K ("c_moddepth", "WHEEL VIB", 88, 152, 48);
+        Ctext ("RING MOD SOURCES", 10, 214);
+        S ("c_ringsrc", 8, 226, 132, 20, false);
+        Ctext ("FM ROUTE", 10, 249);
+        S ("c_fmroute", 8, 260, 132, 20, false);
 
         // Noise
-        M ("NOISE", 50, 492, 190, 242, Acc::osc);
+        M ("NOISE", 50, 484, 190, 250, Acc::osc);
         K ("n_att", "ATTACK", 10, 24, 48);
         K ("n_rel", "RELEASE", 70, 24, 48);
         K ("n_mix", "COLOR", 130, 24, 48);
@@ -589,37 +589,37 @@ public:
         T ("n_sus", "SUSTAIN", 10, 176, 80, 16);
 
         // Stimmen
-        M ("VOICE ALLOCATION", 250, 492, 560, 104, Acc::voice);
-        K ("v_poly", "POLY", 14, 20, 46);
-        K ("v_ucount", "UNISON", 76, 20, 46);
-        K ("v_detune", "DETUNE", 138, 20, 46);
-        K ("v_spread", "SPREAD", 200, 20, 46);
-        K ("v_glide", "GLIDE", 262, 20, 46);
-        T ("v_mono", "MONO", 340, 24, 66);
-        T ("v_unison", "UNISON", 340, 46, 76);
-        T ("v_glideon", "GLIDE ON", 340, 68, 80);
-        T ("v_multi", "MULTI TRIG", 430, 24, 96);
+        M ("VOICE ALLOCATION", 250, 484, 560, 120, Acc::voice);
+        K ("v_poly", "POLY", 14, 24, 52);
+        K ("v_ucount", "UNISON", 80, 24, 52);
+        K ("v_detune", "DETUNE", 146, 24, 52);
+        K ("v_spread", "SPREAD", 212, 24, 52);
+        K ("v_glide", "GLIDE", 278, 24, 52);
+        T ("v_mono", "MONO", 352, 30, 66);
+        T ("v_unison", "UNISON", 352, 54, 76);
+        T ("v_glideon", "GLIDE ON", 352, 78, 80);
+        T ("v_multi", "MULTI TRIG", 444, 30, 96);
 
         // Akkord: Typ-Raster wie bei Akkord-Generatoren, Inversion, Voicing, Bassnote (blau)
-        M ("CHORD", 250, 606, 560, 128, Acc::fx);
-        T ("v_chord", "CHORD ON", 8, 22, 100, 16);
-        T ("v_hold", "HOLD", 8, 44, 100, 16);
-        T ("v_learn", "LEARN", 8, 66, 100, 16);
-        T ("v_silent", "SILENT", 8, 88, 100, 16);
+        M ("CHORD", 250, 614, 560, 120, Acc::fx);
+        T ("v_chord", "CHORD ON", 8, 18, 100, 16);
+        T ("v_hold", "HOLD", 8, 38, 100, 16);
+        T ("v_learn", "LEARN", 8, 58, 100, 16);
+        T ("v_silent", "SILENT", 8, 78, 100, 16);
         auto* clr = new TextButton ("CLEAR");
         owned.add (clr); addAndMakeVisible (clr);
-        clr->setBounds (ox + 8, oy + 106, 96, 16);
+        clr->setBounds (ox + 8, oy + 98, 96, 16);
         clr->onClick = [this] { proc.clearChord(); };
         auto* grid = new ChordGrid (apvts, show, cur);
         owned.add (grid); addAndMakeVisible (grid);
-        grid->setBounds (ox + 114, oy + 18, 326, 104);
-        Ctext ("INVERSION", 448, 16, 8.5f);
-        Cb ("v_cinv", 446, 27, 106, 18);
-        Ctext ("VOICING", 448, 50, 8.5f);
-        Cb ("v_cvoice", 446, 61, 106, 18);
+        grid->setBounds (ox + 114, oy + 16, 326, 98);
+        Ctext ("INVERSION", 448, 14, 8.5f);
+        Cb ("v_cinv", 446, 25, 106, 18);
+        Ctext ("VOICING", 448, 47, 8.5f);
+        Cb ("v_cvoice", 446, 58, 106, 18);
         auto* bassBtn = new StepModeBtn (apvts, "v_cbass", show, cur, { "BASS OFF", "BASS -1 OCT", "BASS -2 OCT" }, -1);
         owned.add (bassBtn); addAndMakeVisible (bassBtn);
-        bassBtn->setBounds (ox + 446, oy + 90, 106, 24);
+        bassBtn->setBounds (ox + 446, oy + 88, 106, 24);
     }
 
     void buildCenter()

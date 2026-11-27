@@ -1,5 +1,8 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v2.0.1
+- Cleaner layout: all sections in the third row start at the same height, VOICE ALLOCATION and CHORD line up with EFFECT 2 and 3, oscillators end in line with EFFECT 1
+
 ### New in v2.0.0
 - Chord section (blue): 18 ready chord types (Major to Power) plus LEARNED, every key plays the chord transposed
 - INVERSION (Root, 1st, 2nd, 3rd) and VOICING (Closed, Open, Drop 2, Wide)
