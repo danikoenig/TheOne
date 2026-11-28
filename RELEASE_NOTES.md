@@ -1,5 +1,10 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v2.5.0
+- Orange window frame removed again: The One keeps its own look without a frame
+- Includes everything from 2.1: 43 factory presets in nine categories and the DUB DELAY effect
+- Manuals and screenshots updated
+
 ### New in v2.1.1
 - **Frame**: the window now has the same 4 px orange frame as Gain, Dub Delay and Remember, so all plugins share one look
 

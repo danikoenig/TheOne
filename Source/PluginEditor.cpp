@@ -1060,7 +1060,6 @@ void TheOneEditor::tickForTest() { content->tick(); }
 
 void TheOneEditor::resized()
 {
-    frameOverlay.attach (*this, 1760.0f);
     const float s = (float) getWidth() / (float) kW;
     content->setTransform (AffineTransform::scale (s));
     content->setBounds (0, 0, kW, kH);
