@@ -1,10 +1,10 @@
-# Komposition The-One-Reel: 1080x1920, 30 fps, 180 s. GUI-Frames (2200x850) + Kamerafahrten + Titel + Endkarte
+# Komposition The-One-Reel: 1080x1920, 30 fps, 178 s. GUI-Frames (2200x850) + Kamerafahrten + Titel + Endkarte
 import math, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 W, H, FPS = 1080, 1920, 30
-TOTAL, GUI_UNTIL = 180.0, 172.0
+TOTAL, GUI_UNTIL = 178.0, 166.0
 FONT = "/usr/share/fonts/opentype/inter/"
 def font(w, s): return ImageFont.truetype(FONT + {"black": "Inter-Black.otf", "bold": "Inter-Bold.otf", "med": "Inter-Medium.otf", "semi": "Inter-SemiBold.otf"}[w], s)
 
@@ -15,36 +15,39 @@ URL = "danikoenig.github.io/plugins"
 
 CROP = {
     "full":    [0, 0, 2200, 850],
-    "osc":     [40, 172, 782, 322],
+    "osc":     [40, 172, 782, 312],
     "filt":    [1250, 2, 910, 274],
     "lfo":     [40, 2, 782, 190],
-    "chord":   [240, 478, 582, 268],
-    "bass":    [1250, 2, 620, 274],
+    "chord":   [244, 606, 572, 132],
+    "chordKb": [222, 606, 940, 240],
     "display": [820, 2, 430, 350],
+    "out":     [1250, 474, 180, 270],
     "seq":     [1420, 474, 740, 272],
     "seqL":    [1420, 474, 460, 272],
     "seqRows": [1560, 600, 600, 148],
     "seqCtl":  [1420, 474, 420, 272],
-    "fx":      [820, 344, 430, 404],
+    "fx":      [820, 344, 430, 400],
 }
 
 SCENES = [  # start, ende, titel, untertitel, ausschnitt, farbe
     (0, 6, "", "", "full", OR),
-    (6, 20, "3 OSCILLATORS", "wave angle · pulse · sync · FM · sub", "osc", OR),
-    (20, 34, "TWO FILTERS", "ladder + state variable · serial or parallel", "filt", CY),
-    (34, 44, "4 LFOs · TEMPO SYNC", "straight · dotted · triplet", "lfo", VI),
-    (44, 60, "CHORD MEMORY", "learn a chord, play it with one finger", "chord", YE),
-    (60, 74, "BIG PADS", "16 voices · unison · ensemble", "full", OR),
-    (74, 84, "DEEP BASS", "sub oscillator · mono · ladder", "bass", OR),
-    (84, 94, "GLIDING LEADS", "mono · legato · vibrato", "display", BL),
-    (94, 104, "16-STEP SEQUENCER", "hold one key and it plays", "seq", SEQ),
-    (104, 112, "PITCH + OCTAVE", "per step, in semitones", "seqL", SEQ),
-    (112, 120, "SLIDE + ACCENT", "acid glides and punch", "seqRows", SEQ),
-    (120, 128, "RANDOM", "pitch · octave · accent · velocity", "seqCtl", SEQ),
-    (128, 136, "PLAY ORDER", "forward · reverse · ping-pong · random", "seq", SEQ),
-    (136, 152, "3 FX SLOTS", "delays · chorus · phaser · resonator", "fx", BL),
-    (152, 164, "ALL ON ONE PANEL", "every control on the surface", "full", OR),
-    (164, 172, "FREE DOWNLOAD", "VST3 · AU · CLAP · Mac", "full", GR),
+    (6, 18, "3 OSCILLATORS", "wave angle · pulse · sync · FM · sub", "osc", OR),
+    (18, 30, "TWO FILTERS", "ladder + state variable · serial or parallel", "filt", CY),
+    (30, 38, "4 LFOs · TEMPO SYNC", "straight · dotted · triplet", "lfo", VI),
+    (38, 50, "CHORDS ON EVERY KEY", "18 types or your own learned chord", "chord", BL),
+    (50, 60, "INVERSION · VOICING · BASS", "open · drop 2 · wide · -1 / -2 oct", "chordKb", BL),
+    (60, 65, "PRESETS", "save your own sounds", "display", BL),
+    (65, 72, "BIG PADS", "16 voices · unison · ensemble", "full", OR),
+    (72, 82, "KNACK CLIP", "push the bass", "out", BL),
+    (82, 90, "GLIDING LEADS", "mono · legato · vibrato", "display", BL),
+    (90, 100, "16-STEP SEQUENCER", "hold one key and it plays", "seq", SEQ),
+    (100, 106, "PITCH + OCTAVE", "per step, in semitones", "seqL", SEQ),
+    (106, 112, "SLIDE + ACCENT", "acid glides and punch", "seqRows", SEQ),
+    (112, 118, "RANDOM", "pitch · octave · accent · velocity", "seqCtl", SEQ),
+    (118, 124, "PLAY ORDER", "forward · reverse · ping-pong · random", "seq", SEQ),
+    (124, 138, "3 FX SLOTS", "delays · chorus · phaser · resonator", "fx", BL),
+    (138, 152, "ALL ON ONE PANEL", "every control on the surface", "full", OR),
+    (152, 166, "FREE DOWNLOAD", "VST3 · AU · CLAP · Mac", "full", GR),
 ]
 
 def scene_at(t):
@@ -54,21 +57,30 @@ def scene_at(t):
 
 def ease(x): x = max(0.0, min(1.0, x)); return x * x * (3 - 2 * x)
 
-BOX_W, BOX_TOP, BOX_MAXH = 1020, 600, 1080
+BOX_W, BOX_TOP, BOX_MAXH = 1020, 600, 1060
+SMAX = 2.3          # maximale Vergroesserung der GUI-Frames
+def view_in(i, t):
+    """Quellrechteck und Massstab fuer Szene i zur Zeit t (breite Ausschnitte werden abgefahren)."""
+    sc = SCENES[i]
+    c = CROP[sc[4]]
+    s = min(SMAX, BOX_MAXH / c[3], 2.2 if sc[4] == "full" else 9)
+    if sc[4] == "full": s = min(s, 1.15)
+    vw = min(c[2], BOX_W / s)
+    u = ease((t - sc[0] - 0.4) / max(0.5, (sc[1] - sc[0]) - 1.2))
+    vx = c[0] + (c[2] - vw) * u
+    return [vx, c[1], vw, c[3]], s
+
 def crop_at(t):
     i = scene_at(t)
-    cur = CROP[SCENES[i][4]]
-    if i == 0: return cur
-    prev = CROP[SCENES[i - 1][4]]
+    cur, s = view_in(i, t)
+    if i == 0: return cur, s
+    prev, ps = view_in(i - 1, SCENES[i][0] - 1e-3)
     u = ease((t - SCENES[i][0]) / 0.7)
-    return [prev[k] + (cur[k] - prev[k]) * u for k in range(4)]
+    r = [prev[k] + (cur[k] - prev[k]) * u for k in range(4)]
+    return r, ps + (s - ps) * u
 
-def box_for(crop):
-    s = BOX_W / crop[2]
-    h = crop[3] * s
-    if h > BOX_MAXH:
-        s = BOX_MAXH / crop[3]; h = BOX_MAXH
-    w = crop[2] * s
+def box_for(crop, s):
+    w, h = crop[2] * s, crop[3] * s
     return (W - w) / 2, BOX_TOP + (BOX_MAXH - h) * 0.38, w, h, s
 
 def make_bg():
@@ -105,8 +117,8 @@ def render(f):
     d = ImageDraw.Draw(img, "RGBA")
     if t < GUI_UNTIL + 0.8:
         gf = gui_frame(min(f, int(GUI_UNTIL * FPS) - 1))
-        crop = crop_at(t)
-        bx, by, bw, bh, s = box_for(crop)
+        crop, sc_ = crop_at(t)
+        bx, by, bw, bh, s = box_for(crop, sc_)
         region = gf.crop((int(crop[0]), int(crop[1]), int(crop[0] + crop[2]), int(crop[1] + crop[3]))).resize((int(bw), int(bh)), Image.LANCZOS)
         i = scene_at(t)
         sc = SCENES[i]
@@ -127,7 +139,7 @@ def render(f):
             u = ease(t / 0.8)
             logo(d, W / 2, 250 - 30 * (1 - u), 54)
             centered(d, 360, "THE ONE", F_TITLE, TEXT)
-            centered(d, 530, "free 16-voice polyphonic synth", F_TSUB, DIM)
+            centered(d, 530, "free 16-voice polyphonic synth  ·  v2.0", F_TSUB, DIM)
         else:
             u = ease((t - sc[0]) / 0.4)
             a = int(255 * u)
@@ -147,11 +159,11 @@ def render(f):
         e = ImageDraw.Draw(end, "RGBA")
         logo(e, W / 2, 470, 76)
         centered(e, 600, "THE ONE", font("black", 130), TEXT)
-        centered(e, 760, "free 16-voice polyphonic synth", F_TSUB, DIM)
+        centered(e, 760, "free 16-voice polyphonic synth  ·  v2.0", F_TSUB, DIM)
         lines = ["3 oscillators  ·  sub  ·  ring mod  ·  noise", "ladder + SVF filter  ·  4 LFOs  ·  3 envelopes",
-                 "chord memory  ·  16-step sequencer  ·  3 FX"]
+                 "18 chord types  ·  inversion  ·  voicing  ·  bass", "16-step sequencer  ·  3 FX  ·  Knack clip  ·  presets"]
         for k, ln in enumerate(lines):
-            centered(e, 880 + k * 62, ln, font("semi", 38), TEXT)
+            centered(e, 860 + k * 58, ln, font("semi", 38), TEXT)
         centered(e, 1110, "VST3 + AU + CLAP  ·  Mac (Apple Silicon)", font("bold", 38), BL)
         fu = font("bold", 40)
         tw = e.textlength(URL, font=fu)

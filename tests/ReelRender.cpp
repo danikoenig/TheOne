@@ -12,8 +12,8 @@ using namespace juce;
 
 static constexpr double FPS = 30.0, SR = 48000.0, BPM = 120.0;
 static constexpr double BEAT = 60.0 / BPM;             // 0.5 s
-static constexpr double TOTAL_BEATS = 360.0;           // 90 Takte = 180 s
-static constexpr double GUI_UNTIL_BEATS = 344.0;       // danach Endkarte (Takt 86)
+static constexpr double TOTAL_BEATS = 356.0;           // 178 s (unter der Shorts-Grenze)
+static constexpr double GUI_UNTIL_BEATS = 332.0;       // danach Endkarte (166 s)
 
 struct FixedPlayHead : AudioPlayHead
 {
@@ -67,15 +67,16 @@ int main (int argc, char** argv)
     const float DIV8D = 6.0f / 14.0f;     // Effekt-Sync 1/8 D
     const float LFO8 = 7.0f / 12.0f;      // LFO-Sync 1/8
 
-    // ---------------- Hook: grosses Pad (Takt 0-3)
+    // ================= Reel v2 (178 s, 120 BPM, Beat = 0.5 s) =================
+    // ---------------- Hook: grosses Pad (Beat 0-12)
     prog (0, 1);
     S (0, "out_vol", 0.755f);
-    chord (0.1, { 45, 52, 55, 59, 60 }, 11.2);
+    chord (0.1, { 45, 52, 55, 59, 60 }, 11.6);
 
-    // ---------------- Oszillatoren (Takt 3-10, Beat 6-20)
+    // ---------------- Oszillatoren (Beat 12-36)
     prog (12, 0);
     S (12, "osc1_wave", 0); S (12, "osc1_angle", 0);
-    for (int bar = 3; bar < 10; ++bar) N (bar * 4.0 + 0.02, 45, 3.9, 0.8f);
+    for (int bar = 3; bar < 9; ++bar) N (bar * 4.0 + 0.02, 45, 3.9, 0.8f);
     R (14, 22, "osc1_angle", 0.0f, 1.0f);
     S (22, "osc2_wave", 1); S (22, "osc2_beat", 0.5f);
     R (22, 26, "mix_lvl1", 0.0f, 0.6f);
@@ -84,109 +85,118 @@ int main (int argc, char** argv)
     R (27, 32, "osc3_pw", 0.5f, 0.1f);
     R (32, 36, "mix_lvl5", 0.0f, 0.7f);
 
-    // ---------------- Filter (Takt 10-17, Beat 20-34)
+    // ---------------- Filter + LFO (Beat 36-76)
     const int riff[8] = { 45, 45, 57, 45, 43, 45, 48, 45 };
-    for (int bar = 10; bar < 22; ++bar)
+    for (int bar = 9; bar < 19; ++bar)
         for (int k = 0; k < 8; ++k) N (bar * 4.0 + k * 0.5, riff[k], 0.4, k % 4 == 0 ? 0.95f : 0.7f);
-    S (40, "lad_res", 0.55f);
-    R (40, 52, "lad_cut", 0.3f, 0.85f);
-    R (52, 56, "lad_cut", 0.85f, 0.42f);
-    at (56, [&set] { for (int i : { 0, 1, 2, 5 }) { set (("mix_svf" + String (i)).toRawUTF8(), 1); set (("mix_lad" + String (i)).toRawUTF8(), 0); } });
-    S (56, "svf_mode", 1); S (56, "svf_res", 0.6f);
-    R (56, 68, "svf_cut", 0.3f, 0.8f);
+    S (36, "lad_res", 0.55f);
+    R (36, 48, "lad_cut", 0.3f, 0.85f);
+    R (48, 52, "lad_cut", 0.85f, 0.42f);
+    at (52, [&set] { for (int i : { 0, 1, 2, 5 }) { set (("mix_svf" + String (i)).toRawUTF8(), 1); set (("mix_lad" + String (i)).toRawUTF8(), 0); } });
+    S (52, "svf_mode", 1); S (52, "svf_res", 0.6f);
+    R (52, 60, "svf_cut", 0.3f, 0.8f);
+    at (60, [&set] { for (int i : { 0, 1, 2, 5 }) { set (("mix_svf" + String (i)).toRawUTF8(), 0); set (("mix_lad" + String (i)).toRawUTF8(), 1); } });
+    S (60, "lad_cut", 0.42f); S (60, "lfo2_sync", 1); S (60, "lfo2_rate", LFO8);
+    R (60, 64, "lad_lfo", 0.0f, 0.55f);
+    S (66, "lfo2_timing", 2);
+    S (70, "lfo2_wave", 1);
+    S (73, "lfo2_timing", 1);
 
-    // ---------------- LFOs (Takt 17-22, Beat 34-44)
-    at (68, [&set] { for (int i : { 0, 1, 2, 5 }) { set (("mix_svf" + String (i)).toRawUTF8(), 0); set (("mix_lad" + String (i)).toRawUTF8(), 1); } });
-    S (68, "lad_cut", 0.42f); S (68, "lfo2_sync", 1); S (68, "lfo2_rate", LFO8);
-    R (68, 72, "lad_lfo", 0.0f, 0.55f);
-    S (76, "lfo2_timing", 2);
-    S (80, "lfo2_wave", 1);
-    S (84, "lfo2_timing", 1);
-
-    // ---------------- Chord Memory (Takt 22-30, Beat 44-60)
-    prog (88, 0);
-    S (88, "mix_lvl1", 0.5f); S (88, "osc2_beat", 0.3f);
-    S (88, "lad_cut", 0.55f); S (88, "lad_res", 0.2f); S (88, "lad_eg", 0.45f);
-    S (88, "feg_dec", 0.52f); S (88, "feg_sus", 0.1f);
-    S (88, "aeg_dec", 0.64f); S (88, "aeg_sus", 0.22f); S (88, "aeg_rel", 0.38f); S (88, "out_vol", 0.95f);
-    S (88, "fx1_type", 3); S (88, "fx1_sync", 1); S (88, "fx1_p1", DIV8D); S (88, "fx1_p2", 0.45f); S (88, "fx1_mix", 0.3f);
-    S (88.1, "v_silent", 1); S (88.2, "v_learn", 1);
-    { int k = 0; for (int key : { 57, 60, 64, 67, 71 }) N (88.4 + 0.16 * k++, key, 0.6, 0.8f); }
-    S (90, "v_learn", 0); S (90.2, "v_chord", 1); S (90.2, "v_silent", 0);
+    // ---------------- Akkordtypen, Inversion, Voicing, Bass (Beat 76-120)
+    prog (76, 0);
+    S (76, "out_vol", 0.95f);
+    S (76, "mix_lvl1", 0.5f); S (76, "osc2_beat", 0.3f);
+    S (76, "lad_cut", 0.55f); S (76, "lad_res", 0.2f); S (76, "lad_eg", 0.45f);
+    S (76, "feg_dec", 0.52f); S (76, "feg_sus", 0.1f);
+    S (76, "aeg_dec", 0.64f); S (76, "aeg_sus", 0.22f); S (76, "aeg_rel", 0.38f);
+    S (76, "fx1_type", 3); S (76, "fx1_sync", 1); S (76, "fx1_p1", DIV8D); S (76, "fx1_p2", 0.45f); S (76, "fx1_mix", 0.3f);
+    S (76, "v_ctype", 10); S (76, "v_chord", 1);                 // Minor 9
+    S (84, "v_ctype", 3);                                         // Major 7
+    S (90, "v_ctype", 11);                                        // Dominant 9
+    S (95, "v_ctype", 13);                                        // Sus 4
+    S (98, "v_ctype", 10);                                        // Minor 9
+    S (100, "v_cinv", 1); S (104, "v_cvoice", 1); S (108, "v_cbass", 1); S (112, "v_cvoice", 3); S (116, "v_cinv", 0);
     const int roots[4] = { 57, 53, 55, 52 };
-    for (int bar = 22; bar < 30; ++bar)
+    for (int bar = 19; bar < 30; ++bar)
         for (double off : { 0.5, 1.5, 2.5, 3.5 })
-            N (bar * 4.0 + off, roots[(bar - 22) % 4], 0.3, 0.85f);
-
-    // ---------------- Pads (Takt 30-37, Beat 60-74)
+            N (bar * 4.0 + off, roots[(bar - 19) % 4], 0.3, 0.85f);
     R (116, 119.8, "fx1_mix", 0.3f, 0.0f);
     R (116, 119.8, "fx1_p2", 0.45f, 0.0f);
+
+    // ---------------- Presets + Pads (Beat 120-144)
     prog (120, 1);
     S (120, "out_vol", 0.68f);
     chord (120.04, { 45, 52, 55, 59, 60 }, 7.8);
     chord (128.04, { 41, 48, 52, 57 }, 7.8);
-    chord (136.04, { 48, 55, 59, 64 }, 7.8);
-    chord (144.04, { 43, 50, 55, 59 }, 3.8);
-    R (120, 148, "lad_cut", 0.4f, 0.66f);
+    chord (136.04, { 48, 55, 59, 64 }, 3.8);
+    chord (140.04, { 43, 50, 55, 59 }, 3.8);
+    R (120, 144, "lad_cut", 0.4f, 0.66f);
 
-    // ---------------- Bass (Takt 37-42, Beat 74-84)
-    prog (148, 3);
-    S (148, "out_vol", 0.8f);
+    // ---------------- Bass + Knack Clip (Beat 144-164)
+    prog (144, 3);
+    S (144, "out_vol", 0.7f);
     const int bl[8] = { 45, 45, 57, 45, 0, 43, 45, 48 };
-    for (int bar = 37; bar < 42; ++bar)
+    for (int bar = 36; bar < 41; ++bar)
         for (int k = 0; k < 8; ++k)
-            if (bl[k] > 0) N (bar * 4.0 + k * 0.5, bar == 39 ? bl[k] - 4 : bl[k], 0.35, k == 0 ? 1.0f : 0.75f);
+            if (bl[k] > 0) N (bar * 4.0 + k * 0.5, bar == 38 ? bl[k] - 4 : bl[k], 0.35, k == 0 ? 1.0f : 0.75f);
+    R (150, 158, "out_clip", 0.0f, 0.6f);
 
-    // ---------------- Lead (Takt 42-47, Beat 84-94)
-    prog (168, 2);
-    N (168, 64, 3.1); N (171, 62, 1.1); N (172, 60, 4.1); N (176, 59, 2.1); N (178, 60, 2.1); N (180, 64, 4.1); N (184, 69, 3.8);
-    at (184.6, [&p] { p.uiMod.store (0.7f); });
-    at (187.8, [&p] { p.uiMod.store (0.0f); });
+    // ---------------- Lead (Beat 164-180)
+    prog (164, 2);
+    S (164, "out_vol", 0.62f);
+    N (164, 64, 3.1); N (167, 62, 1.1); N (168, 60, 4.1); N (172, 59, 2.1); N (174, 60, 2.1); N (176, 69, 3.8);
+    at (176.6, [&p] { p.uiMod.store (0.7f); });
+    at (179.8, [&p] { p.uiMod.store (0.0f); });
 
-    // ---------------- Step-Sequencer (Takt 47-82, Beat 94-164)
-    prog (188, 0);
-    S (188, "out_vol", 0.85f);
-    S (188, "lad_res", 0.65f); S (188, "lad_cut", 0.3f); S (188, "lad_eg", 0.55f);
-    S (188, "feg_att", 0.0f); S (188, "feg_dec", 0.38f); S (188, "feg_sus", 0.05f);
-    S (188, "aeg_att", 0.0f); S (188, "aeg_dec", 0.5f); S (188, "aeg_sus", 0.7f); S (188, "aeg_rel", 0.15f);
-    S (188, "mix_lvl5", 0.4f); S (188, "sub_oct", 0);
+    // ---------------- Step-Sequencer (Beat 180-304)
+    prog (180, 0);
+    S (180, "out_vol", 0.85f);
+    S (180, "lad_res", 0.65f); S (180, "lad_cut", 0.3f); S (180, "lad_eg", 0.55f);
+    S (180, "feg_att", 0.0f); S (180, "feg_dec", 0.38f); S (180, "feg_sus", 0.05f);
+    S (180, "aeg_att", 0.0f); S (180, "aeg_dec", 0.5f); S (180, "aeg_sus", 0.7f); S (180, "aeg_rel", 0.15f);
+    S (180, "mix_lvl5", 0.4f); S (180, "sub_oct", 0);
     const int pat[16] = { 0, 0, 12, 0, 0, 12, 10, 0, 0, 0, 12, 0, 3, 5, 7, 12 };
-    for (int i = 0; i < 16; ++i) S (188, ("seq_p" + String (i + 1)).toRawUTF8(), (float) pat[i]);
-    S (188, "seq_rate", 3); S (188, "seq_len", 16); S (188, "seq_gate", 0.45f); S (188, "seq_latch", 1);
-    S (188.04, "seq_on", 1);
-    N (188.1, 45, 0.5);
-    R (188, 208, "lad_cut", 0.28f, 0.48f);
-    // Pitch + Oktave live (Beat 104-112)
-    S (208, "seq_p4", 7); S (210, "seq_p8", 10); S (212, "seq_o6", 1); S (214, "seq_o14", -1);
-    S (216, "seq_p12", 3); S (218, "seq_p16", 15); S (220, "seq_o2", 1); S (222, "seq_p10", -2);
-    // Slide + Accent (Beat 112-120)
-    S (224, "seq_ac1", 1); S (225, "seq_ac5", 1); S (226, "seq_ac9", 1); S (227, "seq_ac13", 1);
-    S (232, "seq_sl3", 1); S (233, "seq_sl7", 1); S (234, "seq_sl11", 1); S (235, "seq_sl15", 1);
-    // Grundton wandert ab Takt 56 (Beat 112): A A F G
+    for (int i = 0; i < 16; ++i) S (180, ("seq_p" + String (i + 1)).toRawUTF8(), (float) pat[i]);
+    S (180, "seq_rate", 3); S (180, "seq_len", 16); S (180, "seq_gate", 0.45f); S (180, "seq_latch", 1);
+    S (180.04, "seq_on", 1);
+    N (180.1, 45, 0.5);
+    R (180, 200, "lad_cut", 0.28f, 0.48f);
+    // Pitch + Oktave live
+    S (200, "seq_p4", 7); S (201.5, "seq_p8", 10); S (203, "seq_o6", 1); S (204.5, "seq_o14", -1);
+    S (206, "seq_p12", 3); S (207.5, "seq_p16", 15); S (209, "seq_o2", 1); S (210.5, "seq_p10", -2);
+    // Slide + Accent
+    S (212, "seq_ac1", 1); S (213, "seq_ac5", 1); S (214, "seq_ac9", 1); S (215, "seq_ac13", 1);
+    S (217, "seq_sl3", 1); S (218, "seq_sl7", 1); S (219, "seq_sl11", 1); S (220, "seq_sl15", 1);
     const int keys4[4] = { 45, 45, 41, 43 };
-    for (int bar = 56; bar < 82; bar += 2) N (bar * 4.0 + 0.01, keys4[((bar - 56) / 2) % 4], 0.2);
-    // Random (Beat 120-128)
-    S (240, "seq_rndp", 1); S (242, "seq_rnda", 1); S (244, "seq_rndo", 1);
-    R (246, 252, "seq_rnd", 0.3f, 0.55f);
-    R (248, 252, "seq_velrnd", 0.0f, 0.5f);
-    R (240, 256, "lad_cut", 0.48f, 0.58f);
-    // Order (Beat 128-136)
-    S (256, "seq_order", 2); S (262, "seq_order", 3); S (268, "seq_order", 0);
-    S (270, "seq_rndp", 0); S (270, "seq_rndo", 0);
-    // Effekte (Beat 136-152)
-    S (272, "fx1_type", 3); S (272, "fx1_sync", 1); S (272, "fx1_p1", DIV8D); S (272, "fx1_p2", 0.45f); S (272, "fx1_mix", 0.35f);
-    S (280, "fx2_type", 11); S (280, "fx2_p1", 0.3f); S (280, "fx2_mix", 0.35f); S (272, "out_vol", 0.95f);
-    S (288, "fx3_type", 14); S (288, "fx3_mix", 0.25f); S (300, "out_vol", 1.0f);
-    R (288, 296, "fx3_p4", 0.5f, 0.8f);
-    // Finale (Beat 152-164)
-    S (304, "lad_res", 0.75f);
-    R (304, 320, "lad_cut", 0.35f, 0.8f);
-    R (320, 328, "lad_cut", 0.8f, 0.42f);
-    // Ausklang (Beat 164-180)
-    S (328, "seq_on", 0);
-    prog (328.1, 1);
-    S (328.2, "out_vol", 0.68f);
-    chord (328.4, { 45, 52, 55, 59, 60 }, 19, 0.75f);
+    for (int bar = 53; bar < 76; bar += 2) N (bar * 4.0 + 0.01, keys4[((bar - 53) / 2) % 4], 0.4);
+    // Random
+    S (224, "seq_rndp", 1); S (225, "seq_rnda", 1); S (226, "seq_rndo", 1);
+    R (227, 230, "seq_rnd", 0.3f, 0.55f);
+    R (228, 230, "seq_velrnd", 0.0f, 0.5f);
+    R (224, 236, "lad_cut", 0.48f, 0.58f);
+    // Order
+    S (236, "seq_order", 2); S (240, "seq_order", 3); S (244, "seq_order", 0);
+    S (246, "seq_rndp", 0); S (246, "seq_rndo", 0);
+    // Effekte
+    S (248, "out_vol", 0.95f);
+    S (248, "fx1_type", 3); S (248, "fx1_sync", 1); S (248, "fx1_p1", DIV8D); S (248, "fx1_p2", 0.45f); S (248, "fx1_mix", 0.35f);
+    S (254, "fx2_type", 11); S (254, "fx2_p1", 0.3f); S (254, "fx2_mix", 0.35f);
+    S (260, "fx3_type", 14); S (260, "fx3_mix", 0.25f); S (260, "out_vol", 1.0f);
+    R (260, 266, "fx3_p4", 0.5f, 0.8f);
+    // Finale
+    S (276, "lad_res", 0.75f);
+    R (276, 292, "lad_cut", 0.35f, 0.8f);
+    R (292, 304, "lad_cut", 0.8f, 0.42f);
+
+    // ---------------- Ausklang: eine Taste, grosser Akkord (Beat 304-356)
+    S (304, "seq_on", 0);
+    prog (304.05, 1);
+    S (304.1, "out_vol", 0.48f);
+    S (304.1, "v_ucount", 2);
+    S (304.1, "v_chord", 1); S (304.1, "v_ctype", 10); S (304.1, "v_cvoice", 3); S (304.1, "v_cbass", 1);
+    N (304.3, 45, 7.6, 0.75f);
+    N (312.3, 41, 7.6, 0.75f);
+    N (320.3, 45, 20.0, 0.75f);
 
     std::stable_sort (acts.begin(), acts.end(), [] (auto& a, auto& b) { return a.b < b.b; });   // gleiche Zeit: Reihenfolge wie notiert (Programm zuerst)
 
