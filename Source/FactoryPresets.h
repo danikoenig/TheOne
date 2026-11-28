@@ -118,7 +118,7 @@ inline const std::vector<Prog>& factoryPrograms()
             { "v_mono", 1 } }, 1.25f },
         { "Bass - Reese", {
             { "osc1_oct", 1 }, { "osc2_oct", 1 }, { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_beat", 1.2f },
-            { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.55f }, { "mix_lvl5", 0.4f }, { "osc2_oct", 1 }, { "osc2_wave", 1 }, { "osc2_beat", 0.08f }, { "osc2_reset", 1 }, { "mix_lvl1", 0.6f },
+            { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.55f }, { "mix_lvl5", 0.4f },
             { "lad_cut", 0.45f }, { "lad_res", 0.15f }, { "lad_eg", 0.1f },
             { "lad_lfo", 0.12f }, { "lfo2_rate", 0.35f },
             { "aeg_att", 0.2f }, { "aeg_sus", 1.0f }, { "aeg_rel", 0.4f },
@@ -148,13 +148,13 @@ inline const std::vector<Prog>& factoryPrograms()
             { "aeg_att", 0.0f }, { "aeg_dec", 0.7f }, { "aeg_sus", 0.0f }, { "aeg_rel", 0.45f },
             { "v_mono", 1 } }, 1.80f },
         // ================= LEAD =================
-        { "Lead - Mono Glide", {
+        { "Lead - Mono Saw", {
             { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
             { "osc2_beat", 0.2f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.5f },
             { "lad_cut", 0.68f }, { "lad_res", 0.3f }, { "lad_eg", 0.4f },
             { "aeg_att", 0.2f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.7f }, { "aeg_rel", 0.5f },
             { "feg_dec", 0.55f }, { "feg_sus", 0.3f },
-            { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.2f }, { "c_moddepth", 1.5f },
+            { "v_mono", 1 }, { "c_moddepth", 1.5f },
             { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } }, 1.43f },
         { "Lead - Fat Three", {
             { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc3_wave", 1 }, { "osc2_beat", 0.5f }, { "osc3_beat", -0.4f }, { "osc3_oct", 1 },
@@ -162,7 +162,7 @@ inline const std::vector<Prog>& factoryPrograms()
             { "lad_cut", 0.55f }, { "lad_res", 0.25f }, { "lad_eg", 0.35f },
             { "feg_dec", 0.6f }, { "feg_sus", 0.4f },
             { "aeg_att", 0.1f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.45f },
-            { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.25f }, { "v_multi", 0 }, { "c_moddepth", 1.0f },
+            { "v_mono", 1 }, { "v_multi", 0 }, { "c_moddepth", 1.0f },
             { "fx1_type", 5 }, { "fx1_mix", 0.22f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.4f } } },
         { "Lead - Sync Scream", {
             { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_sync", 1 }, { "osc2_freq", 4.0f },
@@ -170,7 +170,7 @@ inline const std::vector<Prog>& factoryPrograms()
             { "c_mepitch", 0.4f }, { "meg_att", 0.0f }, { "meg_dec", 0.72f }, { "meg_sus", 0.15f },
             { "lad_cut", 0.68f }, { "lad_res", 0.2f }, { "lad_eg", 0.2f },
             { "aeg_att", 0.0f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.4f },
-            { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.15f }, { "c_moddepth", 1.0f },
+            { "v_mono", 1 }, { "c_moddepth", 1.0f },
             { "fx1_type", 3 }, { "fx1_mix", 0.22f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.45f } } },
         { "Lead - Square Solo", {
             { "osc1_wave", 0 }, { "osc1_mix", 1 }, { "osc1_pw", 0.5f }, { "osc2_wave", 0 }, { "osc2_mix", 1 }, { "osc2_pw", 0.35f }, { "osc2_beat", 0.3f },
@@ -178,14 +178,14 @@ inline const std::vector<Prog>& factoryPrograms()
             { "lad_cut", 0.6f }, { "lad_res", 0.15f }, { "lad_eg", 0.25f },
             { "aeg_att", 0.15f }, { "aeg_sus", 0.85f }, { "aeg_rel", 0.45f },
             { "c_lfo1", 0.05f }, { "lfo1_rate", 0.8f }, { "lfo1_delay", 0.72f }, { "lfo1_fade", 0.72f },
-            { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.18f },
+            { "v_mono", 1 },
             { "fx1_type", 2 }, { "fx1_mix", 0.2f }, { "fx1_sync", 1 }, { "fx1_p1", S1_4D }, { "fx1_p2", 0.35f } }, 0.60f },
         { "Lead - Whistle", {
             { "osc1_wave", 0 }, { "osc1_oct", 3 }, { "mix_lvl0", 0.8f }, { "mix_lvl4", 0.03f },
             { "lad_cut", 0.8f }, { "lad_res", 0.0f }, { "lad_eg", 0.0f },
             { "aeg_att", 0.45f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.55f },
             { "c_lfo1", 0.06f }, { "lfo1_rate", 0.79f }, { "lfo1_delay", 0.7f }, { "lfo1_fade", 0.74f },
-            { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.28f },
+            { "v_mono", 1 },
             { "fx1_type", 6 }, { "fx1_mix", 0.3f }, { "fx1_p1", 0.72f }, { "fx1_p2", 0.5f } }, 0.73f },
         { "Lead - Unison Saw", {
             { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_oct", 3 }, { "osc2_beat", 0.2f },
@@ -194,7 +194,6 @@ inline const std::vector<Prog>& factoryPrograms()
             { "feg_dec", 0.6f }, { "feg_sus", 0.5f },
             { "aeg_att", 0.05f }, { "aeg_sus", 0.9f }, { "aeg_rel", 0.5f },
             { "v_mono", 1 }, { "v_unison", 1 }, { "v_ucount", 5 }, { "v_detune", 0.35f }, { "v_spread", 0.9f },
-            { "v_glideon", 1 }, { "v_glide", 0.12f },
             { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.45f } }, 0.57f },
         // ================= KEYS =================
         { "Keys - Poly Synth", {
@@ -285,7 +284,7 @@ inline const std::vector<Prog>& factoryPrograms()
             { "lad_cut", 0.36f }, { "lad_res", 0.35f }, { "lad_eg", 0.5f },
             { "feg_att", 0.0f }, { "feg_dec", 0.48f }, { "feg_sus", 0.0f }, { "feg_rel", 0.45f },
             { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.0f }, { "aeg_rel", 0.5f },
-            { "fx1_type", 5 }, { "fx1_mix", 0.45f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.7f }, { "fx1_p3", 0.35f }, { "fx1_p4", 0.4f },
+            { "fx1_type", 15 }, { "fx1_mix", 0.45f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.5f }, { "fx1_p3", 0.5f }, { "fx1_p4", 0.5f }, { "fx1_p5", 0.5f },
             { "fx2_type", 12 }, { "fx2_mix", 0.25f }, { "fx2_p1", 0.15f } }, 1.80f },
         // ================= CHORD =================
         { "Chord - Dub House Stab", {
@@ -295,7 +294,7 @@ inline const std::vector<Prog>& factoryPrograms()
             { "feg_att", 0.0f }, { "feg_dec", 0.52f }, { "feg_sus", 0.08f }, { "feg_rel", 0.45f },
             { "aeg_att", 0.0f }, { "aeg_dec", 0.64f }, { "aeg_sus", 0.15f }, { "aeg_rel", 0.45f },
             { "v_chord", 1 }, { "v_ctype", 4 }, { "v_cvoice", 1 },
-            { "fx1_type", 5 }, { "fx1_mix", 0.4f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.65f }, { "fx1_p3", 0.35f },
+            { "fx1_type", 15 }, { "fx1_mix", 0.4f }, { "fx1_sync", 1 }, { "fx1_p1", S1_8D }, { "fx1_p2", 0.5f }, { "fx1_p3", 0.5f }, { "fx1_p4", 0.5f }, { "fx1_p5", 0.5f },
             { "fx2_type", 7 }, { "fx2_mix", 0.3f } }, 2.20f },
         { "Chord - Deep House", {
             { "osc1_wave", 1 }, { "osc2_wave", 0 }, { "osc2_beat", 0.25f },

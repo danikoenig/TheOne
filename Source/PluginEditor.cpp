@@ -669,7 +669,15 @@ public:
         const int type = (int) std::lround (u.typeParam->load());
         const bool sync = u.syncParam->load() > 0.5f;
         char b[48];
-        const bool delayT = type >= FX_DELAY && type <= FX_ECHO;
+        const bool delayT = (type >= FX_DELAY && type <= FX_ECHO) || type == FX_DUB;
+        if (type == FX_DUB && k > 0)
+        {
+            if (k == 1) snprintf (b, sizeof (b), "%.0f %%", dubFeedbackPct (x));
+            else if (k == 2) { const float f = dubFilterHz (x); if (f < 1000.0f) snprintf (b, sizeof (b), "%.0f Hz", f); else snprintf (b, sizeof (b), "%.1f kHz", f / 1000.0f); }
+            else if (k == 3) snprintf (b, sizeof (b), "%.1f dB", dubDriveDb (x));
+            else snprintf (b, sizeof (b), "%.1f", dubLfoAmt (x));
+            return b;
+        }
         const bool modT = (type >= FX_CHORUS && type <= FX_PHASER12);
         if (k == 0)
         {

@@ -1,6 +1,7 @@
 #pragma once
 // Effekt-Slots von «The One»: Delays, Chorus-Familie, Flanger, Phaser, Bitcrusher, Resonator.
 #include "Params.h"
+#include "DubEngine.h"
 #include <vector>
 #include <cstdint>
 
@@ -50,6 +51,7 @@ private:
     float tapeLp[2] = { 0, 0 };
     float chFb[2] = { 0, 0 };
     uint32_t rng = 1234567u;
+    DubEngine dub;
     Smooth sTime[2], sMix, sFb, sTone, sP4, sP5, sRate;
     float noise() { rng ^= rng << 13; rng ^= rng >> 17; rng ^= rng << 5; return (float) (int32_t) rng * (1.0f / 2147483648.0f); }
 };

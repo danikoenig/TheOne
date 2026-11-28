@@ -26,12 +26,14 @@ void FxSlot::prepare (double sampleRate)
     const int maxD = (int) (2.6 * sr) + 8;
     dl[0].init (maxD); dl[1].init (maxD);
     for (auto& r : apLine) for (auto& l : r) l.init (2048);
+    dub.prepare (sampleRate);
     lastType = -1;
 }
 
 void FxSlot::clearState()
 {
     dl[0].clear(); dl[1].clear();
+    dub.reset();
     for (auto& r : apLine) for (auto& l : r) l.clear();
     for (int c = 0; c < 2; ++c)
     {
@@ -64,6 +66,29 @@ void FxSlot::process (float* L, float* R, int n, const float* p, double bpm)
     // Modulationsrate (Hz) aus P1
     float modRate = 0.1f * std::pow (100.0f, p1);
     if (sync) modRate = (1.0f / beatSec) / std::max (0.0625f, kFxDivBeats[fxDivIndex (p1)]);
+
+    if (type == FX_DUB)
+    {   // Dub Delay (Kette aus dem Plugin «Dub Delay»): 100 % nass berechnen, Mischung hier
+        DubParams dp;
+        dp.timeMode = 2; dp.msL = dp.msR = baseTime * 1000.0f;
+        dp.pingPong = true; dp.travel = 0; dp.mix = 100.0f;
+        dp.feedback = dubFeedbackPct (p2); dp.afFreq = dubFilterHz (p3);
+        dp.driveDb = dubDriveDb (p4); dp.lfoAmount = dubLfoAmt (p5);
+        float wl[256], wr[256];
+        for (int s0 = 0; s0 < n; s0 += 256)
+        {
+            const int m = std::min (256, n - s0);
+            std::copy (L + s0, L + s0 + m, wl); std::copy (R + s0, R + s0 + m, wr);
+            dub.process (wl, wr, m, dp);
+            for (int i = 0; i < m; ++i)
+            {
+                const float mix = sMix.step (mixT, cs);
+                L[s0 + i] += mix * (wl[i] - L[s0 + i]);
+                R[s0 + i] += mix * (wr[i] - R[s0 + i]);
+            }
+        }
+        return;
+    }
 
     const bool delayType = type >= FX_DELAY && type <= FX_ECHO;
     for (int i = 0; i < n; ++i)

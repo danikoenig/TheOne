@@ -81,16 +81,21 @@ inline const char* fxDivName (int i)
     static const char* n[kFxDivs] = { "1/1", "1/2 D", "1/2", "1/4 D", "1/2 T", "1/4", "1/8 D", "1/4 T", "1/8", "1/16 D", "1/8 T", "1/16", "1/16 T", "1/32", "1/32 T" };
     return n[i < 0 ? 0 : (i >= kFxDivs ? kFxDivs - 1 : i)];
 }
+// Dub Delay: Abbildung der fuenf Regler (Mitte = Init des Ableton-Racks DKO Dub Delay II)
+inline float dubFeedbackPct (float x) { return 160.0f * x; }                       // 0.5 = 80 %
+inline float dubFilterHz (float x)    { return 863.0f * std::pow (16.0f, 2.0f * x - 1.0f); }   // 0.5 = 863 Hz, 54 Hz .. 13.8 kHz
+inline float dubDriveDb (float x)     { return 30.0f * x; }                         // 0.5 = 15 dB
+inline float dubLfoAmt (float x)      { return 33.0f * x; }                         // 0.5 = 16.5
 inline int fxDivIndex (float x) { int i = (int) std::lround (x * (kFxDivs - 1)); return i < 0 ? 0 : (i > kFxDivs - 1 ? kFxDivs - 1 : i); }
 
 // ---- Effekt-Typen und Beschriftung der fuenf Regler -------------------------
 enum FxType { FX_OFF, FX_DELAY, FX_STEREO, FX_PINGPONG, FX_BBD, FX_TAPE, FX_ECHO, FX_CHORUS, FX_DUALCHORUS, FX_ENSEMBLE,
-              FX_FLANGER, FX_PHASER6, FX_PHASER12, FX_CRUSHER, FX_RESONATOR, FX_NUM };
+              FX_FLANGER, FX_PHASER6, FX_PHASER12, FX_CRUSHER, FX_RESONATOR, FX_DUB, FX_NUM };
 
 inline const char* fxTypeName (int t)
 {
     static const char* n[FX_NUM] = { "OFF", "DELAY", "STEREO DELAY", "PING PONG", "BBD DELAY", "TAPE DELAY", "ECHO", "CHORUS",
-                                     "DUAL CHORUS", "ENSEMBLE", "FLANGER", "PHASER 6", "PHASER 12", "BIT CRUSHER", "RESONATOR" };
+                                     "DUAL CHORUS", "ENSEMBLE", "FLANGER", "PHASER 6", "PHASER 12", "BIT CRUSHER", "RESONATOR", "DUB DELAY" };
     return n[t < 0 ? 0 : (t >= FX_NUM ? FX_NUM - 1 : t)];
 }
 inline const char* fxLabel (int type, int p)   // p = 0..4
@@ -110,7 +115,8 @@ inline const char* fxLabel (int type, int p)   // p = 0..4
         { "RATE", "DEPTH", "FEEDBACK", "SWEEP", "SPREAD" },
         { "RATE", "DEPTH", "FEEDBACK", "SWEEP", "SPREAD" },
         { "BITS", "RATE", "TONE", "JITTER", "DRIVE" },
-        { "LOW", "MID", "HIGH", "RESO", "MOD" } };
+        { "LOW", "MID", "HIGH", "RESO", "MOD" },
+        { "TIME", "FEEDBACK", "FILTER", "DRIVE", "LFO" } };
     return L[type < 0 ? 0 : (type >= FX_NUM ? FX_NUM - 1 : type)][p];
 }
 

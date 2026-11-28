@@ -49,6 +49,7 @@ juce_add_plugin(TheOne
 target_sources(TheOne PRIVATE
     Source/Engine.cpp
     Source/Effects.cpp
+    Source/DubEngine.cpp
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/Look.cpp)
