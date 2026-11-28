@@ -12,7 +12,7 @@ CONTENT = {
  "by": "by Dani Koenig",
  "intro": ("The One is a 16-voice polyphonic synth, inspired by the Moog One. One big panel, every control on the surface, no menus. "
            "Three oscillators, ring mod, noise and a sub feed two filters (SVF and Ladder), three envelopes and four LFOs shape the sound, "
-           "three effect slots finish it. It ships without presets: you program it from scratch."),
+           "three effect slots finish it. 43 factory presets in nine categories get you started."),
  "note": "Chord Memory and the 16-step sequencer are built in, so one key can play a whole chord or a running bassline.",
  "blocks": [],
  "quick_title": "Quick start",
@@ -81,7 +81,8 @@ CONTENT = {
     ("BEND, MOD WHEEL", "Pitch bend range 0 to 24 semitones, mod wheel vibrato 0 to 12."),
   ]),
   ("#ff4d5e", "EFFECTS (3 slots)", [
-    ("Types", "Delay, Stereo Delay, Ping Pong, BBD Delay, Tape Delay, Echo, Chorus, Dual Chorus, Ensemble, Flanger, Phaser 6, Phaser 12, Bit Crusher, Resonator."),
+    ("Types", "Delay, Stereo Delay, Ping Pong, BBD Delay, Tape Delay, Echo, Chorus, Dual Chorus, Ensemble, Flanger, Phaser 6, Phaser 12, Bit Crusher, Resonator, Dub Delay."),
+    ("DUB DELAY", "The chain of the Dub Delay plug-in: ping-pong delay with filter in the feedback, saturation, band-pass with LFO, low cut. Knobs: TIME, FEEDBACK (0 to 160 %), FILTER, DRIVE, LFO. Centre position = classic dub setting."),
     ("Controls", "Five knobs per slot. Their labels change with the type (time, feedback, tone, rate, depth and so on), plus MIX."),
     ("SYNC", "Delay times follow the DAW tempo in note values, with dotted and triplet."),
   ]),
@@ -99,8 +100,8 @@ CONTENT = {
     ("PANIC", "Stops all notes and switches HOLD off."),
   ]),
   ("#4fb8ee", "PRESETS (top of the display)", [
-    ("< / >", "Steps through all presets: Init and four factory starting points (Pad, Lead, Bass, Pluck), then your own."),
-    ("Preset name", "Click for the menu: FACTORY, your presets sorted by category, and Open preset folder."),
+    ("< / >", "Steps through all presets: Init and the factory presets, then your own."),
+    ("Preset name", "Click for the menu: FACTORY with the categories Pad, Bass, Lead, Keys, Brass, Pluck, Chord, Seq and FX, your presets sorted by category, and Open preset folder. Chord presets have CHORD on; Seq presets run the sequencer when you hold a key."),
     ("SAVE", "Saves everything: all controls, every sequencer step and the learned chord. Category = subfolder, may stay empty."),
     ("DEL", "Moves your preset to the trash. Factory programs cannot be deleted."),
     ("Folder", "Music / Dani Koenig / The One / Presets. Files end in .theone and work in every DAW and the standalone app."),
@@ -127,7 +128,7 @@ CONTENT = {
  "by": "von Dani Koenig",
  "intro": ("The One ist ein polyphoner Synth mit 16 Stimmen, inspiriert vom Moog One. Ein grosses Panel, alle Regler auf der Oberfläche, keine Menüs. "
            "Drei Oszillatoren, Ringmodulator, Noise und Sub speisen zwei Filter (SVF und Ladder), drei Hüllkurven und vier LFOs formen den Klang, "
-           "drei Effekt-Slots machen den Rest. Es gibt keine Presets: Du programmierst von Grund auf."),
+           "drei Effekt-Slots machen den Rest. 43 Werks-Presets in neun Kategorien helfen beim Einstieg."),
  "note": "Chord Memory und der 16-Step-Sequencer sind eingebaut: Eine Taste spielt einen ganzen Akkord oder eine laufende Bassline.",
  "blocks": [],
  "quick_title": "Schnellstart",
@@ -196,7 +197,8 @@ CONTENT = {
     ("BEND, MOD WHEEL", "Pitch-Bend-Bereich 0 bis 24 Halbtöne, Modrad-Vibrato 0 bis 12."),
   ]),
   ("#ff4d5e", "EFFEKTE (3 Slots)", [
-    ("Typen", "Delay, Stereo Delay, Ping Pong, BBD Delay, Tape Delay, Echo, Chorus, Dual Chorus, Ensemble, Flanger, Phaser 6, Phaser 12, Bit Crusher, Resonator."),
+    ("Typen", "Delay, Stereo Delay, Ping Pong, BBD Delay, Tape Delay, Echo, Chorus, Dual Chorus, Ensemble, Flanger, Phaser 6, Phaser 12, Bit Crusher, Resonator, Dub Delay."),
+    ("DUB DELAY", "Die Kette aus dem Plugin Dub Delay: Ping-Pong-Delay mit Filter im Feedback, Sättigung, Bandpass mit LFO, Low Cut. Regler: TIME, FEEDBACK (0 bis 160 %), FILTER, DRIVE, LFO. Mittelstellung = klassische Dub-Einstellung."),
     ("Regler", "Fünf Regler pro Slot. Die Beschriftung ändert sich mit dem Typ (Time, Feedback, Tone, Rate, Depth usw.), dazu MIX."),
     ("SYNC", "Delay-Zeiten folgen dem DAW-Tempo in Notenwerten, mit punktiert und triolisch."),
   ]),
@@ -214,8 +216,8 @@ CONTENT = {
     ("PANIC", "Stoppt alle Noten und schaltet HOLD aus."),
   ]),
   ("#4fb8ee", "PRESETS (oben im Display)", [
-    ("< / >", "Blättert durch alle Presets: Init und vier Werks-Startpunkte (Pad, Lead, Bass, Pluck), dann deine eigenen."),
-    ("Preset-Name", "Klick öffnet das Menü: FACTORY, deine Presets nach Kategorie und Open preset folder."),
+    ("< / >", "Blättert durch alle Presets: Init und die Werks-Presets, dann deine eigenen."),
+    ("Preset-Name", "Klick öffnet das Menü: FACTORY mit den Kategorien Pad, Bass, Lead, Keys, Brass, Pluck, Chord, Seq und FX, deine Presets nach Kategorie und Open preset folder. Chord-Presets haben CHORD an, Seq-Presets starten den Sequencer, sobald du eine Taste hältst."),
     ("SAVE", "Speichert alles: alle Regler, jeden Sequencer-Step und den gelernten Akkord. Kategorie = Unterordner, darf leer bleiben."),
     ("DEL", "Legt dein Preset in den Papierkorb. Werksprogramme lassen sich nicht löschen."),
     ("Ordner", "Musik / Dani Koenig / The One / Presets. Die Dateien enden auf .theone und funktionieren in jeder DAW und in der Standalone-App."),
