@@ -140,6 +140,7 @@ int main (int argc, char** argv)
         for (int k = 0; k < 8; ++k)
             if (bl[k] > 0) N (bar * 4.0 + k * 0.5, bar == 38 ? bl[k] - 4 : bl[k], 0.35, k == 0 ? 1.0f : 0.75f);
     R (150, 158, "out_clip", 0.0f, 0.6f);
+    S (163.9, "out_clip", 0.0f);                                  // Clip nur im Bass-Teil
 
     // ---------------- Lead (Beat 164-180)
     prog (164, 2);
