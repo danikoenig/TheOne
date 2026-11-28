@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "FactoryPresets.h"
 #include "PluginEditor.h"
 #include <algorithm>
 #include <cmath>
@@ -160,52 +161,8 @@ void TheOneProcessor::setChordFromString (const String& s)
 }
 
 //==============================================================================
-// Start-Programme (eigene Ausgangspunkte, keine Presets des Originals)
-namespace
-{
-    using PV = std::pair<const char*, float>;
-    struct Prog { const char* name; std::vector<PV> v; };
-    const std::vector<Prog>& programs()
-    {
-        static const std::vector<Prog> p = {
-            { "Init", {} },
-            { "Pad - Warm Unison", {
-                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc3_oct", 3 },
-                { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc3_wave", 0 },
-                { "osc2_beat", 0.35f }, { "osc3_beat", -0.3f }, { "osc3_angle", 0.0f },
-                { "mix_lvl0", 0.4f }, { "mix_lvl1", 0.35f }, { "mix_lvl2", 0.25f },
-                { "lad_cut", 0.5f }, { "lad_res", 0.15f }, { "lad_eg", 0.3f }, { "lad_key", 0.5f },
-                { "aeg_att", 0.72f }, { "aeg_dec", 0.7f }, { "aeg_sus", 0.85f }, { "aeg_rel", 0.8f },
-                { "feg_att", 0.72f }, { "feg_dec", 0.8f }, { "feg_sus", 0.45f }, { "feg_rel", 0.8f },
-                { "v_poly", 16 }, { "v_unison", 1 }, { "v_ucount", 3 }, { "v_detune", 0.3f }, { "v_spread", 0.8f },
-                { "fx1_type", 9 }, { "fx1_mix", 0.5f }, { "fx2_type", 2 }, { "fx2_mix", 0.25f } } },
-            { "Lead - Mono Glide", {
-                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 1 },
-                { "osc2_beat", 0.2f }, { "mix_lvl0", 0.7f }, { "mix_lvl1", 0.5f },
-                { "lad_cut", 0.62f }, { "lad_res", 0.3f }, { "lad_eg", 0.4f },
-                { "aeg_att", 0.2f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.7f }, { "aeg_rel", 0.5f },
-                { "feg_dec", 0.55f }, { "feg_sus", 0.3f },
-                { "v_mono", 1 }, { "v_glideon", 1 }, { "v_glide", 0.2f }, { "c_moddepth", 1.5f },
-                { "fx1_type", 3 }, { "fx1_mix", 0.25f }, { "fx2_type", 7 }, { "fx2_mix", 0.3f } } },
-            { "Bass - Sub", {
-                { "osc1_oct", 2 }, { "osc2_oct", 2 }, { "osc1_wave", 1 }, { "osc2_wave", 0 }, { "osc2_mix", 1 }, { "osc2_pw", 0.5f },
-                { "osc2_beat", 0.15f }, { "osc1_reset", 1 }, { "osc2_reset", 1 },
-                { "mix_lvl0", 0.55f }, { "mix_lvl1", 0.4f }, { "mix_lvl5", 0.6f }, { "sub_oct", 0 }, { "sub_wave", 0 },
-                { "lad_cut", 0.4f }, { "lad_res", 0.2f }, { "lad_eg", 0.42f }, { "lad_key", 0.5f }, { "lad_slope", 3 },
-                { "feg_att", 0.0f }, { "feg_dec", 0.5f }, { "feg_sus", 0.08f }, { "feg_rel", 0.35f }, { "feg_vel", 0.4f },
-                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.8f }, { "aeg_rel", 0.3f },
-                { "v_mono", 1 }, { "v_glideon", 0 }, { "v_multi", 1 } } },
-            { "Pluck - Poly", {
-                { "osc1_wave", 1 }, { "osc2_wave", 1 }, { "osc2_mix", 0.6f }, { "osc2_pw", 0.3f }, { "osc2_beat", 0.25f },
-                { "mix_lvl0", 0.6f }, { "mix_lvl1", 0.45f },
-                { "lad_cut", 0.34f }, { "lad_res", 0.2f }, { "lad_eg", 0.6f },
-                { "feg_att", 0.0f }, { "feg_dec", 0.5f }, { "feg_sus", 0.0f }, { "feg_rel", 0.5f },
-                { "aeg_att", 0.0f }, { "aeg_dec", 0.6f }, { "aeg_sus", 0.0f }, { "aeg_rel", 0.5f },
-                { "fx1_type", 3 }, { "fx1_mix", 0.22f }, { "fx2_type", 7 }, { "fx2_mix", 0.25f } } }
-        };
-        return p;
-    }
-}
+// Werks-Presets (eigene Sounds, keine Presets des Originals): Source/FactoryPresets.h
+namespace { const std::vector<TO::Prog>& programs() { return TO::factoryPrograms(); } }
 
 int TheOneProcessor::getNumPrograms() { return (int) programs().size(); }
 const String TheOneProcessor::getProgramName (int i) { return String (programs()[(size_t) jlimit (0, getNumPrograms() - 1, i)].name); }
@@ -221,9 +178,14 @@ void TheOneProcessor::setCurrentProgram (int idx)
             if (id.startsWith ("out_") || id == "v_hold" || id == "v_learn" || id == "v_silent") continue;
             rp->setValueNotifyingHost (rp->getDefaultValue());
         }
-    for (auto& kv : programs()[(size_t) idx].v)
+    const auto& prog = programs()[(size_t) idx];
+    for (auto& kv : prog.v)
         if (auto* rp = apvts.getParameter (kv.first))
-            rp->setValueNotifyingHost (rp->convertTo0to1 (kv.second));
+        {
+            float v = kv.second;
+            if (String (kv.first).startsWith ("mix_lvl")) v = jlimit (0.0f, 1.0f, v * prog.trim);   // Pegelabgleich
+            rp->setValueNotifyingHost (rp->convertTo0to1 (v));
+        }
     apvts.state.setProperty ("presetName", String (programs()[(size_t) idx].name), nullptr);
     apvts.state.setProperty ("presetFile", "", nullptr);
 }

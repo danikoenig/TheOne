@@ -310,7 +310,21 @@ private:
             else cats[e.category].addItem (i + 1, e.name, true, i == cur);
         }
         m.addSectionHeader ("FACTORY");
-        for (int i = 0; i < menuList.size(); ++i) if (menuList[i].factory >= 0) m.addItem (i + 1, menuList[i].name, true, i == cur);
+        {   // Werks-Presets nach Kategorie ("Pad - Name") in Untermenues
+            std::vector<std::pair<String, PopupMenu>> fcats;
+            for (int i = 0; i < menuList.size(); ++i)
+            {
+                const auto& e = menuList[i];
+                if (e.factory < 0) continue;
+                const int dash = e.name.indexOf (" - ");
+                if (dash < 0) { m.addItem (i + 1, e.name, true, i == cur); continue; }
+                const String cat = e.name.substring (0, dash), nm = e.name.substring (dash + 3);
+                auto it = std::find_if (fcats.begin(), fcats.end(), [&] (auto& c) { return c.first == cat; });
+                if (it == fcats.end()) { fcats.push_back ({ cat, PopupMenu() }); it = fcats.end() - 1; }
+                it->second.addItem (i + 1, nm, true, i == cur);
+            }
+            for (auto& [c, sub] : fcats) m.addSubMenu (c, sub, true, nullptr, [&] { for (int i = 0; i < menuList.size(); ++i) if (i == cur && menuList[i].factory >= 0 && menuList[i].name.startsWith (c + " - ")) return true; return false; }());
+        }
         if (! cats.empty() || top.getNumItems() > 0)
         {
             m.addSectionHeader ("USER");
