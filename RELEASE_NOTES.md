@@ -1,5 +1,8 @@
 Free polyphonic synth plug-in for macOS (Apple Silicon), VST3, Audio Unit and CLAP. By Dani Koenig.
 
+### New in v2.1.1
+- **Frame**: the window now has the same 4 px orange frame as Gain, Dub Delay and Remember, so all plugins share one look
+
 ### New in v2.1.0
 - 43 factory presets in nine categories: Pad, Bass, Lead, Keys, Brass, Pluck, Chord, Seq, FX (own sounds), shown as submenus in the preset menu
 - Chord presets with CHORD on, Seq presets with a running sequencer

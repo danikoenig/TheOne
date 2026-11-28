@@ -1,9 +1,12 @@
 #pragma once
 #include "PluginProcessor.h"
+#include "FrameOverlay.h"
 #include "Look.h"
 
 class TheOneEditor : public juce::AudioProcessorEditor
 {
+    FrameOverlay frameOverlay;
+
 public:
     explicit TheOneEditor (TheOneProcessor&);
     ~TheOneEditor() override;
